@@ -87,7 +87,13 @@ let
           ;
       };
 
-      espPython = import ./python-packages.nix { inherit pkgs lib; };
+      espPython = import ./python-packages.nix {
+        inherit
+          pkgs
+          lib
+          ;
+        espIdfVersion = version;
+      };
 
       esp-idf = import ./esp-idf.nix {
         inherit
@@ -157,6 +163,7 @@ let
             IDF_PATH = "${esp-idf}";
             IDF_TOOLS_PATH = "${esp-idf}/tools-path";
             IDF_PYTHON_ENV_PATH = "${espPython.pythonEnv}";
+            ESP_IDF_VERSION = version;
             ESP_ROM_ELF_DIR = "${espTools.esp-rom-elfs}";
             OPENOCD_SCRIPTS = "${espTools.openocd-esp32}/share/openocd/scripts";
           };
