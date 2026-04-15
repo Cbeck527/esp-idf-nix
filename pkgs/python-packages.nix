@@ -81,14 +81,58 @@ let
     meta.description = "ESP-IDF Kconfig tooling (menuconfig)";
   };
 
-  esptool = py.buildPythonPackage {
-    pname = "esptool";
-    version = "4.8.1";
+  esp-idf-diag = py.buildPythonPackage {
+    pname = "esp-idf-diag";
+    version = "0.2.0";
     pyproject = true;
 
     src = pkgs.fetchurl {
-      url = "https://files.pythonhosted.org/packages/5c/6b/3ce9bb7f36bdef3d6ae71646a1d3b7d59826a478f3ed8a783a93a2f8f537/esptool-4.8.1.tar.gz";
-      sha256 = "dc4ef26b659e1a8dcb019147c0ea6d94980b34de99fbe09121c7941c8b254531";
+      url = "https://files.pythonhosted.org/packages/5d/e8/ebb81a1a297dfc2c1d94dce2a412b1e956049baed8ddcaf0d61cc26a2e7a/esp_idf_diag-0.2.0.tar.gz";
+      sha256 = "83affa9922e7ab9e9e11683f3507356f590385f735a43532442d2d9301a4e8a0";
+    };
+
+    build-system = [ py.setuptools ];
+
+    dependencies = with py; [
+      pyyaml
+      rich
+    ];
+
+    doCheck = false;
+
+    meta.description = "ESP-IDF diagnostics and bug report tool";
+  };
+
+  tree-sitter-c = py.buildPythonPackage {
+    pname = "tree-sitter-c";
+    version = "0.24.1";
+    pyproject = true;
+
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/f1/f5/ba8cd08d717277551ade8537d3aa2a94b907c6c6e0fbcf4e4d8b1c747fa3/tree_sitter_c-0.24.1.tar.gz";
+      sha256 = "7d2d0cda0b8dda428c81440c1e94367f9f13548eedca3f49768bde66b1422ad6";
+    };
+
+    build-system = [
+      py.setuptools
+      py.wheel
+    ];
+
+    dependencies = [ py.tree-sitter ];
+
+    doCheck = false;
+
+    meta.description = "C grammar for tree-sitter";
+  };
+
+  esptool = py.buildPythonPackage {
+    pname = "esptool";
+    version = "4.12.dev1";
+    pyproject = true;
+
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/ad/ba/4dd9f00ab0fb69fa899ff1e4b93a8225b54a08d8b745c82b52fef3ec2c5e/esptool-4.12.dev1.tar.gz";
+      sha256 = "6a3f5424f8c9f057f5a05a96da4c12b08369a0a8d27beaf0e33efcffda0f4d74";
     };
 
     build-system = [ py.setuptools ];
@@ -247,6 +291,8 @@ in
     esp-idf-panic-decoder
     esp-idf-nvs-partition-gen
     esp-idf-kconfig
+    esp-idf-diag
+    tree-sitter-c
     esptool
     esp-coredump
     esp-idf-monitor
@@ -260,6 +306,8 @@ in
     esp-idf-panic-decoder
     esp-idf-nvs-partition-gen
     esp-idf-kconfig
+    esp-idf-diag
+    tree-sitter-c
     esptool
     esp-coredump
     esp-idf-monitor
@@ -277,6 +325,7 @@ in
     ps.setuptools
     ps.packaging
     ps.pyyaml
+    ps.tree-sitter
     ps.freertos-gdb
   ]);
 }
