@@ -1,5 +1,5 @@
 {
-  description = "ESP-IDF project";
+  description = "ESP-IDF v5 project";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -29,7 +29,10 @@
       devShells = forAllSystems (
         system:
         let
-          env = esp-idf-nix.lib.mkEspIdfEnv { inherit system; };
+          env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
+            inherit system;
+            major = "5";
+          };
         in
         {
           default = env.devShells.full;

@@ -1,5 +1,8 @@
 {
-  defaultVersion = "5.5.4";
+  latestByMajor = {
+    "5" = "5.5.4";
+    "6" = "6.0";
+  };
 
   knownVersions = {
     "5.5.4" = {

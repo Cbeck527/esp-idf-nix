@@ -21,6 +21,7 @@ pkgs.writeShellApplication {
 
     version="$1"
     tag="v$version"
+    major="$(printf '%s' "$version" | cut -d. -f1)"
     major_minor="$(printf '%s' "$version" | cut -d. -f1,2)"
     tools_json_url="https://raw.githubusercontent.com/espressif/esp-idf/$tag/tools/tools.json"
     constraints_url="https://dl.espressif.com/dl/esp-idf/espidf.constraints.v$major_minor.txt"
@@ -74,6 +75,7 @@ pkgs.writeShellApplication {
     toolsJsonPath = $registry_tools_path
 
     # Write this file to $suggested_tools_path
+    # If this should become the v$major alias, update latestByMajor."$major" = "$version";
     EOF
 
     cat "$tmpdir/tools.json"

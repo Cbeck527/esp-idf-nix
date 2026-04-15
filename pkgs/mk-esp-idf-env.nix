@@ -8,6 +8,8 @@ let
     "python3.13-ecdsa-0.19.1"
   ];
 
+  supportedMajors = builtins.attrNames versionRegistry.latestByMajor;
+
   espPlatforms = {
     x86_64-linux = "linux-amd64";
     aarch64-linux = "linux-arm64";
@@ -28,6 +30,17 @@ let
       versionRegistry.knownVersions.${version}
     else
       null;
+
+  getLatestVersionForMajor =
+    major:
+    if builtins.hasAttr major versionRegistry.latestByMajor then
+      versionRegistry.latestByMajor.${major}
+    else
+      throw ''
+        Unknown ESP-IDF major ${major} for lib.mkEspIdfEnvForMajor.
+
+        Supported majors: ${builtins.concatStringsSep ", " supportedMajors}
+      '';
 
   loadToolsJson =
     toolsJson:
@@ -151,7 +164,7 @@ let
               echo ""
               echo "  NOTE: IDF_PATH not set. Either:"
               echo "    export IDF_PATH=/path/to/your/esp-idf"
-              echo "    or use 'nix develop .#full' for packaged ESP-IDF"
+              echo "    or use a full shell such as 'nix develop .#v5' or '.#v6'"
             fi
           '';
         };
@@ -189,7 +202,7 @@ let
   mkEspIdfEnv =
     {
       system,
-      version ? versionRegistry.defaultVersion,
+      version,
       srcHash ? null,
       constraintsHash ? null,
       toolsJson ? null,
@@ -239,10 +252,20 @@ let
       toolsJson = resolvedToolsJson;
     };
 
+  mkEspIdfEnvForMajor =
+    {
+      system,
+      major,
+    }:
+    mkEspIdfEnv {
+      inherit system;
+      version = getLatestVersionForMajor major;
+    };
+
   mkEspIdfEnvFromUpstream =
     {
       system,
-      version ? versionRegistry.defaultVersion,
+      version,
       srcHash ? null,
       constraintsHash ? null,
     }:
@@ -300,5 +323,9 @@ let
     };
 in
 {
-  inherit mkEspIdfEnv mkEspIdfEnvFromUpstream;
+  inherit
+    mkEspIdfEnv
+    mkEspIdfEnvForMajor
+    mkEspIdfEnvFromUpstream
+    ;
 }
