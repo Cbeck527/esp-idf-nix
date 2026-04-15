@@ -114,6 +114,8 @@ Use this path when you want EIM to manage the checkout, tools, and activation sc
 - versions already registered in `data/versions.nix`
 - or explicit `srcHash`, `constraintsHash`, and `toolsJson`
 
+The flake's top-level `.#full` shell always uses `defaultVersion`. Registering a new version makes it available through `lib.mkEspIdfEnv`, but it does not change `.#full` unless you also update `defaultVersion`.
+
 Example with the built-in default:
 
 ```nix
@@ -156,6 +158,32 @@ That prints:
 - the ESP-IDF source hash
 - the constraints file hash
 - the exact `tools.json` content to save under `data/tools/`
+
+To inspect or enter a non-default registered version from this repo directly:
+
+```sh
+nix eval --impure --json --expr '
+  let
+    flake = builtins.getFlake (toString ./.);
+  in
+  builtins.attrNames (
+    (flake.lib.mkEspIdfEnv {
+      system = builtins.currentSystem;
+      version = "6.0";
+    }).packages
+  )
+'
+
+nix develop --impure --expr '
+  let
+    flake = builtins.getFlake (toString ./.);
+  in
+  (flake.lib.mkEspIdfEnv {
+    system = builtins.currentSystem;
+    version = "6.0";
+  }).devShells.full
+' -c true
+```
 
 ## Flake Outputs
 

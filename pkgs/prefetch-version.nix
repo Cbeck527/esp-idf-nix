@@ -72,6 +72,8 @@ pkgs.writeShellApplication {
     srcHash = "$src_hash"
     constraintsHash = "$constraints_hash"
     toolsJsonPath = $registry_tools_path
+
+    # Write this file to $suggested_tools_path
     EOF
 
     cat "$tmpdir/tools.json"
