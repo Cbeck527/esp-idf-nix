@@ -6,15 +6,15 @@ It provides:
 
 - Espressif toolchains for Xtensa and RISC-V targets
 - An ESP-IDF-aware Python environment
-- An optional packaged ESP-IDF tree with `idf.py` ready to use
-- A reusable library for downstream flakes
+- A packaged ESP-IDF tree with `idf.py` ready to use
+- Reusable library helpers for downstream flakes
 - `eim`, the ESP-IDF Installation Manager CLI
-- A project template for quick scaffolding
+- Separate project templates for the supported major release lines
 
-Current defaults:
+Current major aliases:
 
-- ESP-IDF: `5.5.4`
-- EIM CLI: `0.10.5`
+- `v5` -> `5.5.4`
+- `v6` -> `6.0`
 
 ## Quick Start
 
@@ -24,30 +24,35 @@ Current defaults:
 mkdir my-esp32-project
 cd my-esp32-project
 
-nix flake init -t github:Cbeck527/esp-idf-nix#default
+nix flake init -t github:Cbeck527/esp-idf-nix#v5
+# or:
+# nix flake init -t github:Cbeck527/esp-idf-nix#v6
+
 nix develop
 idf.py set-target esp32
 idf.py build
 ```
 
-The template uses the `full` shell, so `idf.py` works immediately.
+The generated project uses the packaged ESP-IDF shell for its chosen major version.
 
 ### Try the flake directly
 
 ```sh
-# Full shell: toolchains + Python + packaged ESP-IDF
-nix develop github:Cbeck527/esp-idf-nix#full
+# Full shells
+nix develop github:Cbeck527/esp-idf-nix#v5
+nix develop github:Cbeck527/esp-idf-nix#v6
 
-# Tools-only shell: toolchains + Python + OpenOCD + EIM
-nix develop github:Cbeck527/esp-idf-nix
+# Tools-only shells
+nix develop github:Cbeck527/esp-idf-nix#v5-tools
+nix develop github:Cbeck527/esp-idf-nix#v6-tools
 
-# Run the standalone ESP-IDF Installation Manager CLI
+# Standalone ESP-IDF Installation Manager CLI
 nix run github:Cbeck527/esp-idf-nix#eim -- --help
 ```
 
 ## Use in Your Own `flake.nix`
 
-This is the simplest downstream setup. It keeps `nixpkgs` aligned and uses the packaged ESP-IDF shell:
+Use `mkEspIdfEnvForMajor` when you want to stay on the latest registered release for a major line:
 
 ```nix
 {
@@ -75,7 +80,10 @@ This is the simplest downstream setup. It keeps `nixpkgs` aligned and uses the p
       devShells = forAllSystems (
         system:
         let
-          env = esp-idf-nix.lib.mkEspIdfEnv { inherit system; };
+          env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
+            inherit system;
+            major = "6";
+          };
         in
         {
           default = env.devShells.full;
@@ -85,46 +93,27 @@ This is the simplest downstream setup. It keeps `nixpkgs` aligned and uses the p
 }
 ```
 
-If you want to use your own ESP-IDF checkout instead, switch to `env.devShells.default` and set `IDF_PATH` yourself.
+If you want a specific registered release instead of a floating major alias, use `mkEspIdfEnv` with an explicit `version`.
 
-## Manage Your Own ESP-IDF Install With EIM
+## Exact Version Selection
 
-`eim` is useful if you want Espressif-managed installations outside the Nix store. This is separate from the Nix-packaged `esp-idf` output.
+`mkEspIdfEnvForMajor` resolves `v5` and `v6` through `lib.latestByMajor`.
 
-```sh
-# Show EIM help
-nix run github:Cbeck527/esp-idf-nix#eim -- --help
-
-# Install ESP-IDF 5.5.4 into your own directory
-nix run github:Cbeck527/esp-idf-nix#eim -- install --idf-versions 5.5.4 --path "$HOME/esp"
-
-# See what EIM has installed
-nix run github:Cbeck527/esp-idf-nix#eim -- list
-
-# Mark one version as active
-nix run github:Cbeck527/esp-idf-nix#eim -- select 5.5.4
+```nix
+env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
+  system = "aarch64-darwin";
+  major = "6";
+};
 ```
 
-Use this path when you want EIM to manage the checkout, tools, and activation scripts in the usual Espressif layout instead of relying on the Nix-managed `full` shell.
-
-## Version Selection
-
-`lib.mkEspIdfEnv` is the pure default path. It works with:
-
-- versions already registered in `data/versions.nix`
-- or explicit `srcHash`, `constraintsHash`, and `toolsJson`
-
-The flake's top-level `.#full` shell always uses `defaultVersion`. Registering a new version makes it available through `lib.mkEspIdfEnv`, but it does not change `.#full` unless you also update `defaultVersion`.
-
-Example with the built-in default:
+`mkEspIdfEnv` is the pure exact-version path for registered releases or explicit metadata.
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
   system = "aarch64-darwin";
+  version = "5.5.4";
 };
 ```
-
-Example with explicit metadata:
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
@@ -141,25 +130,13 @@ If you want an arbitrary upstream ESP-IDF tag without checking metadata into you
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnvFromUpstream {
   system = "aarch64-darwin";
-  version = "5.5.4";
-  srcHash = "sha256-rItbBrwItkfJf8tKImAQsiXDR95sr0LqaM51gDZG/nI=";
-  constraintsHash = "sha256-TqFUnYsDrTTi9M4xVVaDXcumPBWS9vezhqZt4ffujgQ=";
+  version = "6.0";
+  srcHash = "sha256-YhON/zUFOVTh8UEvujAXsd9IPaaNmSIP+dSZDE5fyqw=";
+  constraintsHash = "sha256-Q9aRPdmUB/qyhV+WMl3E363RSk7qPtNqq/Nh5Z0ZQoo=";
 };
 ```
 
-For new versions, use the helper:
-
-```sh
-nix run github:Cbeck527/esp-idf-nix#prefetch-version -- 5.5.4
-```
-
-That prints:
-
-- the ESP-IDF source hash
-- the constraints file hash
-- the exact `tools.json` content to save under `data/tools/`
-
-To inspect or enter a non-default registered version from this repo directly:
+To inspect the exact packages for a registered version:
 
 ```sh
 nix eval --impure --json --expr '
@@ -173,42 +150,60 @@ nix eval --impure --json --expr '
     }).packages
   )
 '
-
-nix develop --impure --expr '
-  let
-    flake = builtins.getFlake (toString ./.);
-  in
-  (flake.lib.mkEspIdfEnv {
-    system = builtins.currentSystem;
-    version = "6.0";
-  }).devShells.full
-' -c true
 ```
 
-## Flake Outputs
+## Versioned Tools and Packages
 
-### Dev shells
+The top-level flake exposes versioned packages for version-dependent artifacts:
 
-| Shell | Command | Includes |
-|---|---|---|
-| `default` | `nix develop` | Toolchains, Python env, CMake, Ninja, OpenOCD, EIM |
-| `full` | `nix develop .#full` | `default` plus packaged ESP-IDF with `idf.py` on `PATH` |
+- `esp-idf-v5`, `esp-idf-v6`
+- `xtensa-esp-elf-v5`, `xtensa-esp-elf-v6`
+- `xtensa-esp-elf-gdb-v5`, `xtensa-esp-elf-gdb-v6`
+- `riscv32-esp-elf-v5`, `riscv32-esp-elf-v6`
+- `riscv32-esp-elf-gdb-v5`, `riscv32-esp-elf-gdb-v6`
+- `openocd-esp32-v5`, `openocd-esp32-v6`
+- `esp32ulp-elf-v5`, `esp32ulp-elf-v6`
+- `esp-rom-elfs-v5`, `esp-rom-elfs-v6`
 
-### Packages
+Examples:
 
-| Package | Command | Description |
-|---|---|---|
-| `default` | `nix run` | Runs `eim` |
-| `eim` | `nix run .#eim -- --help` | ESP-IDF Installation Manager CLI |
-| `esp-idf` | `nix build .#esp-idf` | ESP-IDF source tree packaged in the Nix store |
-| `prefetch-version` | `nix run .#prefetch-version -- 5.5.4` | Fetch helper for registering new ESP-IDF versions |
-| `xtensa-esp-elf` | `nix build .#xtensa-esp-elf` | Xtensa GCC toolchain |
-| `riscv32-esp-elf` | `nix build .#riscv32-esp-elf` | RISC-V GCC toolchain |
-| `xtensa-esp-elf-gdb` | `nix build .#xtensa-esp-elf-gdb` | Xtensa GDB |
-| `riscv32-esp-elf-gdb` | `nix build .#riscv32-esp-elf-gdb` | RISC-V GDB |
-| `openocd-esp32` | `nix build .#openocd-esp32` | OpenOCD debugger |
-| `esp32ulp-elf` | `nix build .#esp32ulp-elf` | ULP coprocessor toolchain |
-| `esp-rom-elfs` | `nix build .#esp-rom-elfs` | ROM ELFs for debug symbols |
+```sh
+nix build .#esp-idf-v6
+nix build .#openocd-esp32-v6
+nix build .#xtensa-esp-elf-v5
+```
+
+Unversioned packages remain available only for artifacts that are not tied to an ESP-IDF major:
+
+- `eim`
+- `prefetch-version`
+
+## Manage Your Own ESP-IDF Install With EIM
+
+`eim` is useful if you want Espressif-managed installations outside the Nix store. This is separate from the Nix-packaged `esp-idf` output.
+
+```sh
+nix run github:Cbeck527/esp-idf-nix#eim -- --help
+nix run github:Cbeck527/esp-idf-nix#eim -- install --idf-versions 5.5.4 --path "$HOME/esp"
+nix run github:Cbeck527/esp-idf-nix#eim -- list
+nix run github:Cbeck527/esp-idf-nix#eim -- select 5.5.4
+```
+
+## Add a New ESP-IDF Version
+
+Use the helper to prefetch the hashes and upstream `tools.json`:
+
+```sh
+nix run github:Cbeck527/esp-idf-nix#prefetch-version -- 5.5.5
+```
+
+Then:
+
+- add the exact release to `data/versions.nix`
+- save the printed JSON under `data/tools/`
+- update `latestByMajor."5"` or `latestByMajor."6"` if that release should become the new `v5` or `v6` alias
+
+See [data/README.md](./data/README.md) for the exact workflow.
 
 ## Supported Platforms
 
@@ -217,22 +212,14 @@ nix develop --impure --expr '
 - `x86_64-darwin`
 - `aarch64-darwin`
 
-## How It Works
-
-1. The flake keeps a checked-in registry of known-good ESP-IDF metadata in `data/versions.nix`.
-2. The pure `mkEspIdfEnv` path reads `tools.json` from the repo for registered versions instead of fetching it during evaluation.
-3. The dynamic `mkEspIdfEnvFromUpstream` path can still read `tools.json` from an upstream ESP-IDF tag when you opt into that behavior.
-4. Toolchain packages are generated from Espressif’s `tools.json` metadata.
-5. The packaged `esp-idf` output includes deterministic git metadata so `git describe` still works inside the Nix store.
-
 ## Troubleshooting
 
 ### `IDF_PATH` is not set
 
-You are in the `default` shell. Either:
+You are in a tools-only shell. Either:
 
 - set `IDF_PATH` to your own ESP-IDF checkout
-- or use `nix develop .#full`
+- or use a full shell such as `nix develop .#v5` or `nix develop .#v6`
 
 ### `mkEspIdfEnv` says a version is unknown
 

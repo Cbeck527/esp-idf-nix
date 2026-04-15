@@ -2,22 +2,24 @@
 
 This directory holds the checked-in metadata for the flake's pure `mkEspIdfEnv` path.
 
-Each supported ESP-IDF version needs two things:
+Each supported release needs:
 
 - a `tools.json` snapshot under `data/tools/`
-- an entry in `data/versions.nix`
+- an exact entry in `data/versions.nix`
+
+Major aliases are managed separately through `latestByMajor`.
 
 ## Workflow
 
 1. Run the helper for the version you want to add.
 
 ```sh
-nix run .#prefetch-version -- 5.5.5
+nix run path:.#prefetch-version -- 5.5.5
 ```
 
 2. Save the JSON part of the output to `data/tools/v5.5.5.json`.
 
-3. Add a matching entry to `data/versions.nix`:
+3. Add the exact release to `data/versions.nix`:
 
 ```nix
 "5.5.5" = {
@@ -27,9 +29,13 @@ nix run .#prefetch-version -- 5.5.5
 };
 ```
 
-4. If this should become the default release, update `defaultVersion`.
+4. If this should become the new `v5` or `v6` target, update `latestByMajor` too:
 
-5. Verify the new version:
+```nix
+latestByMajor."5" = "5.5.5";
+```
+
+5. Verify the exact release:
 
 ```sh
 nix flake show path:. --all-systems
@@ -55,9 +61,15 @@ nix develop --impure --expr '
 ' -c true
 ```
 
+6. If you updated `latestByMajor`, verify the major alias too:
+
+```sh
+nix develop path:.#v5 -c true
+```
+
 ## Notes
 
 - `toolsJsonPath` is relative to `data/versions.nix`, so use `./tools/...`.
 - Keep the filename aligned with the upstream tag: `data/tools/v<version>.json`.
-- `nix develop .#full` only switches to the new version if you also update `defaultVersion`.
+- `v5` and `v6` are explicit aliases backed by `latestByMajor`.
 - Use `mkEspIdfEnvFromUpstream` only when you want dynamic version support without checking metadata into the repo.
