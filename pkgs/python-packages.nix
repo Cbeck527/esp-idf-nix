@@ -1,34 +1,7 @@
-# pkgs/python-packages.nix
-#
-# Espressif Python packages that aren't in nixpkgs (or need specific
-# versions). These are built using Nix's Python packaging infrastructure.
-#
-# ── How Python packaging works in Nix ──
-# nixpkgs has ~20,000 Python packages under python3Packages. When a
-# package is missing, you use `buildPythonPackage` to create it.
-# The key attributes:
-#   pname/version  -- package identity
-#   src            -- source tarball (usually from PyPI)
-#   dependencies   -- Python packages this depends on (runtime)
-#   build-system   -- tools needed to build (setuptools, flit, etc.)
-#   pythonRelaxDepsHook -- relaxes version constraints that are too tight
-#
-# Called from flake.nix with:
-#   espPythonPkgs = import ./pkgs/python-packages.nix { inherit pkgs lib; };
-
 { pkgs, lib }:
 
 let
   py = pkgs.python3Packages;
-
-  # ── Helper: fetch from PyPI ──
-  # Most Python packages live on PyPI. `fetchPypi` constructs the URL
-  # automatically from pname + version. But the URL format has changed
-  # over the years, so we use fetchurl with explicit URLs for reliability.
-
-  # ── Build order (respects dependency chain) ──────────────────────
-
-  # 1. No Espressif dependencies
   pyclang = py.buildPythonPackage {
     pname = "pyclang";
     version = "0.6.3";
@@ -41,16 +14,13 @@ let
 
     build-system = [ py.setuptools ];
 
-    # No runtime dependencies
     dependencies = [ ];
 
-    # Skip tests -- they require clang-tidy installed
     doCheck = false;
 
     meta.description = "Python clang-tidy runner";
   };
 
-  # 2. Depends on pyelftools (in nixpkgs)
   esp-idf-panic-decoder = py.buildPythonPackage {
     pname = "esp-idf-panic-decoder";
     version = "1.4.2";
@@ -70,7 +40,6 @@ let
     meta.description = "ESP-IDF panic backtrace decoder";
   };
 
-  # 3. Depends on cryptography (in nixpkgs)
   esp-idf-nvs-partition-gen = py.buildPythonPackage {
     pname = "esp-idf-nvs-partition-gen";
     version = "0.2.0";
@@ -90,7 +59,6 @@ let
     meta.description = "ESP-IDF NVS partition generation tool";
   };
 
-  # 4. Depends on rich + pyparsing (in nixpkgs)
   esp-idf-kconfig = py.buildPythonPackage {
     pname = "esp-idf-kconfig";
     version = "2.5.3";
@@ -113,7 +81,6 @@ let
     meta.description = "ESP-IDF Kconfig tooling (menuconfig)";
   };
 
-  # 5. The ESP flasher tool -- needs pinned to 4.8.x (nixpkgs has 5.x)
   esptool = py.buildPythonPackage {
     pname = "esptool";
     version = "4.8.1";
@@ -137,10 +104,7 @@ let
       argcomplete
     ];
 
-    # pythonRelaxDepsHook removes overly strict version pins from the
-    # package's metadata. Without this, pip would refuse to install
-    # because our nixpkgs cryptography version is newer than the
-    # constraint allows.
+    # Relax esptool's metadata so it accepts the newer nixpkgs cryptography build.
     nativeBuildInputs = [ py.pythonRelaxDepsHook ];
     pythonRelaxDeps = [
       "cryptography"
@@ -151,7 +115,6 @@ let
     meta.description = "ESP chip serial flasher and provisioning utility";
   };
 
-  # 6. Depends on esptool (ours), construct, pygdbmi (nixpkgs)
   esp-coredump = py.buildPythonPackage {
     pname = "esp-coredump";
     version = "1.15.0";
@@ -167,7 +130,7 @@ let
     dependencies = [
       py.construct
       py.pygdbmi
-      esptool # our version (4.8.x)
+      esptool
     ];
 
     nativeBuildInputs = [ py.pythonRelaxDepsHook ];
@@ -181,7 +144,6 @@ let
     meta.description = "ESP core dump analysis tool";
   };
 
-  # 7. Depends on esp-coredump + esp-idf-panic-decoder (ours)
   esp-idf-monitor = py.buildPythonPackage {
     pname = "esp-idf-monitor";
     version = "1.9.0";
@@ -212,7 +174,6 @@ let
     meta.description = "ESP-IDF serial monitor with panic decoding";
   };
 
-  # 8. Component package manager -- many deps, all in nixpkgs
   idf-component-manager = py.buildPythonPackage {
     pname = "idf-component-manager";
     version = "2.4.9";
@@ -257,7 +218,6 @@ let
     meta.description = "ESP-IDF component dependency manager";
   };
 
-  # 9. Binary size analysis -- needs 1.x (nixpkgs has 2.x)
   esp-idf-size = py.buildPythonPackage {
     pname = "esp-idf-size";
     version = "1.7.1";
@@ -294,12 +254,8 @@ in
     esp-idf-size
     ;
 
-  # ── Combined Python environment ─────────────────────────────────
-  # python3.withPackages creates a Python installation that has all
-  # listed packages available for import. This is what goes into the
-  # devShell.
+  # Keep one Python environment aligned with the packaged IDF toolchain.
   pythonEnv = pkgs.python3.withPackages (ps: [
-    # Our custom Espressif packages
     pyclang
     esp-idf-panic-decoder
     esp-idf-nvs-partition-gen
@@ -310,7 +266,6 @@ in
     idf-component-manager
     esp-idf-size
 
-    # Standard packages from nixpkgs that ESP-IDF also needs
     ps.click
     ps.pyserial
     ps.cryptography
