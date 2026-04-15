@@ -138,9 +138,9 @@ let
 
           shellHook = ''
             echo "ESP-IDF development environment (tools only)"
-            echo "  Xtensa GCC:  $(xtensa-esp-elf-gcc --version | head -1)"
-            echo "  RISC-V GCC:  $(riscv32-esp-elf-gcc --version | head -1)"
-            echo "  OpenOCD:     $(openocd --version 2>&1 | head -1)"
+            echo "Xtensa GCC:  $(xtensa-esp-elf-gcc --version | head -1)"
+            echo "RISC-V GCC:  $(riscv32-esp-elf-gcc --version | head -1)"
+            echo "OpenOCD:     $(openocd --version 2>&1 | head -1)"
             if [ -z "$IDF_PATH" ]; then
               echo ""
               echo "  NOTE: IDF_PATH not set. Either:"
@@ -169,13 +169,11 @@ let
             export GIT_CONFIG_VALUE_$GIT_CONFIG_COUNT="${esp-idf}"
             export GIT_CONFIG_COUNT=$((GIT_CONFIG_COUNT + 1))
 
-            echo "ESP-IDF v${version} development environment"
-            echo "  IDF_PATH:    $IDF_PATH"
-            echo "  Xtensa GCC:  $(xtensa-esp-elf-gcc --version | head -1)"
-            echo "  RISC-V GCC:  $(riscv32-esp-elf-gcc --version | head -1)"
-            echo "  OpenOCD:     $(openocd --version 2>&1 | head -1)"
-            echo ""
-            echo "  Ready! Try: idf.py create-project myproject"
+            echo "ESP-IDF v${version}"
+            echo "IDF_PATH:    $IDF_PATH"
+            echo "Xtensa GCC:  $(xtensa-esp-elf-gcc --version | head -1)"
+            echo "RISC-V GCC:  $(riscv32-esp-elf-gcc --version | head -1)"
+            echo "OpenOCD:     $(openocd --version 2>&1 | head -1)"
           '';
         };
       };
