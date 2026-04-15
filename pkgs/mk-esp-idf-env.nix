@@ -206,6 +206,7 @@ let
       srcHash ? null,
       constraintsHash ? null,
       toolsJson ? null,
+      pkgs ? mkPkgs system,
     }:
     let
       knownVersion = getKnownVersion version;
@@ -244,6 +245,7 @@ let
     in
     mkEnv {
       inherit
+        pkgs
         system
         version
         ;
@@ -256,9 +258,13 @@ let
     {
       system,
       major,
+      pkgs ? mkPkgs system,
     }:
     mkEspIdfEnv {
-      inherit system;
+      inherit
+        pkgs
+        system
+        ;
       version = getLatestVersionForMajor major;
     };
 
@@ -268,6 +274,8 @@ let
       version,
       srcHash ? null,
       constraintsHash ? null,
+      toolsJson ? null,
+      pkgs ? mkPkgs system,
     }:
     let
       knownVersion = getKnownVersion version;
@@ -298,26 +306,25 @@ let
               nix run .#prefetch-version -- ${version}
           '';
 
-      pkgs = mkPkgs system;
+      resolvedToolsJson =
+        if toolsJson != null then
+          loadToolsJson toolsJson
+        else if knownVersion != null then
+          loadToolsJson knownVersion.toolsJsonPath
+        else
+          throw ''
+            lib.mkEspIdfEnvFromUpstream requires toolsJson for ESP-IDF ${version}.
 
-      idfSrc = pkgs.fetchFromGitHub {
-        owner = "espressif";
-        repo = "esp-idf";
-        rev = "v${version}";
-        fetchSubmodules = true;
-        hash = resolvedSrcHash;
-      };
-
-      toolsJson = builtins.fromJSON (builtins.readFile "${idfSrc}/tools/tools.json");
+            Pass toolsJson explicitly, or register the version in lib.knownVersions.
+          '';
     in
     mkEnv {
       inherit
         pkgs
-        idfSrc
         system
         version
-        toolsJson
         ;
+      toolsJson = resolvedToolsJson;
       srcHash = resolvedSrcHash;
       constraintsHash = resolvedConstraintsHash;
     };

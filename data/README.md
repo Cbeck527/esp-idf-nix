@@ -72,4 +72,5 @@ nix develop path:.#v5 -c true
 - `toolsJsonPath` is relative to `data/versions.nix`, so use `./tools/...`.
 - Keep the filename aligned with the upstream tag: `data/tools/v<version>.json`.
 - `v5` and `v6` are explicit aliases backed by `latestByMajor`.
-- Use `mkEspIdfEnvFromUpstream` only when you want dynamic version support without checking metadata into the repo.
+- Use `mkEspIdfEnvFromUpstream` when you want dynamic version support without registering the version in `data/versions.nix`.
+- `mkEspIdfEnvFromUpstream` still needs explicit upstream metadata, including `toolsJson`.

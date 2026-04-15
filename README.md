@@ -38,6 +38,9 @@ The generated project uses the packaged ESP-IDF shell for its chosen major versi
 ### Try the flake directly
 
 ```sh
+# Default shell (latest supported major)
+nix develop github:Cbeck527/esp-idf-nix
+
 # Full shells
 nix develop github:Cbeck527/esp-idf-nix#v5
 nix develop github:Cbeck527/esp-idf-nix#v6
@@ -51,6 +54,8 @@ nix run github:Cbeck527/esp-idf-nix#eim -- --help
 ```
 
 ## Use in Your Own `flake.nix`
+
+All library helpers accept an optional `pkgs` argument so downstream flakes can preserve their own overlays and nixpkgs configuration.
 
 Use `mkEspIdfEnvForMajor` when you want to stay on the latest registered release for a major line:
 
@@ -80,8 +85,13 @@ Use `mkEspIdfEnvForMajor` when you want to stay on the latest registered release
       devShells = forAllSystems (
         system:
         let
+          pkgs = import nixpkgs { inherit system; };
+
           env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
-            inherit system;
+            inherit
+              pkgs
+              system
+              ;
             major = "6";
           };
         in
@@ -101,6 +111,7 @@ If you want a specific registered release instead of a floating major alias, use
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
+  pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
   major = "6";
 };
@@ -110,6 +121,7 @@ env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
+  pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
   version = "5.5.4";
 };
@@ -117,6 +129,7 @@ env = esp-idf-nix.lib.mkEspIdfEnv {
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
+  pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
   version = "5.5.4";
   srcHash = "sha256-rItbBrwItkfJf8tKImAQsiXDR95sr0LqaM51gDZG/nI=";
@@ -125,16 +138,20 @@ env = esp-idf-nix.lib.mkEspIdfEnv {
 };
 ```
 
-If you want an arbitrary upstream ESP-IDF tag without checking metadata into your own repo, use `mkEspIdfEnvFromUpstream`:
+If you want an arbitrary upstream ESP-IDF tag without registering it in `lib.knownVersions`, use `mkEspIdfEnvFromUpstream` with explicit metadata:
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnvFromUpstream {
+  pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
   version = "6.0";
   srcHash = "sha256-YhON/zUFOVTh8UEvujAXsd9IPaaNmSIP+dSZDE5fyqw=";
   constraintsHash = "sha256-Q9aRPdmUB/qyhV+WMl3E363RSk7qPtNqq/Nh5Z0ZQoo=";
+  toolsJson = ./tools.json;
 };
 ```
+
+This keeps the helper usable in strict Nix environments without import-from-derivation.
 
 To inspect the exact packages for a registered version:
 
@@ -229,4 +246,4 @@ Use one of these options:
 
 - add the version to your own checked-in metadata and call `mkEspIdfEnv`
 - pass `srcHash`, `constraintsHash`, and `toolsJson` directly
-- or switch to `mkEspIdfEnvFromUpstream`
+- or call `mkEspIdfEnvFromUpstream` with `srcHash`, `constraintsHash`, and `toolsJson`

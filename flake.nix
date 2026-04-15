@@ -61,9 +61,14 @@
         envsByMajor = builtins.mapAttrs (
           _major: version: envLib.mkEspIdfEnv { inherit system version; }
         ) latestByMajor;
+        sortedMajors = builtins.sort lib.versionOlder supportedMajors;
+        defaultMajor = lib.last sortedMajors;
 
         majorShells =
-          builtins.listToAttrs (
+          {
+            default = envsByMajor.${defaultMajor}.devShells.full;
+          }
+          // builtins.listToAttrs (
             map (
               major:
               {
