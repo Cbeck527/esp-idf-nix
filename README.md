@@ -14,7 +14,7 @@ It provides:
 Current major aliases:
 
 - `v5` -> `5.5.4`
-- `v6` -> `6.0`
+- `v6` -> `6.0.1`
 
 ## Quick Start
 
@@ -144,9 +144,9 @@ If you want an arbitrary upstream ESP-IDF tag without registering it in `lib.kno
 env = esp-idf-nix.lib.mkEspIdfEnvFromUpstream {
   pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
-  version = "6.0";
-  srcHash = "sha256-YhON/zUFOVTh8UEvujAXsd9IPaaNmSIP+dSZDE5fyqw=";
-  constraintsHash = "sha256-Q9aRPdmUB/qyhV+WMl3E363RSk7qPtNqq/Nh5Z0ZQoo=";
+  version = "6.0.1";
+  srcHash = "sha256-4KJa686qc+u7XkF/GS2o53l1SpwP2EmdqAn/qmlL1yU=";
+  constraintsHash = "sha256-tT7QkI0wcxKCsS7QLXDohwCVJKGn+BIdaok1vW8p4Uc=";
   toolsJson = ./tools.json;
 };
 ```
@@ -163,7 +163,7 @@ nix eval --impure --json --expr '
   builtins.attrNames (
     (flake.lib.mkEspIdfEnv {
       system = builtins.currentSystem;
-      version = "6.0";
+      version = "6.0.1";
     }).packages
   )
 '
