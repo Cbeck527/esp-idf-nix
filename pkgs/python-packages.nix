@@ -19,9 +19,9 @@ let
         };
 
         esptool = {
-          version = "4.12.dev1";
-          url = "https://files.pythonhosted.org/packages/ad/ba/4dd9f00ab0fb69fa899ff1e4b93a8225b54a08d8b745c82b52fef3ec2c5e/esptool-4.12.dev1.tar.gz";
-          sha256 = "6a3f5424f8c9f057f5a05a96da4c12b08369a0a8d27beaf0e33efcffda0f4d74";
+          version = "4.12.dev3";
+          url = "https://files.pythonhosted.org/packages/fb/e3/16550412544581e57d5e154faf6c7482d10b4085efceee7ad6badc359eae/esptool-4.12.dev3.tar.gz";
+          sha256 = "fade69a55f491f7c8c6a57d0213bd95e1cae468078b7c7fb491a913f8e80e9fa";
           dependencies = with py; [
             bitstring
             cryptography

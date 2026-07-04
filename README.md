@@ -127,13 +127,16 @@ env = esp-idf-nix.lib.mkEspIdfEnv {
 };
 ```
 
+Note: when you pass your own `pkgs`, ESP-IDF v5 environments need nixpkgs' insecure ecdsa allowed, e.g. `config.allowInsecurePredicate = pkg: (pkg.pname or "") == "ecdsa";`.
+
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
   pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
   version = "5.5.4";
   srcHash = "sha256-rItbBrwItkfJf8tKImAQsiXDR95sr0LqaM51gDZG/nI=";
-  constraintsHash = "sha256-TqFUnYsDrTTi9M4xVVaDXcumPBWS9vezhqZt4ffujgQ=";
+  # curl -fsSLO https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt
+  constraintsFile = ./espidf.constraints.v5.5.txt;
   toolsJson = ./tools.json;
 };
 ```
@@ -146,7 +149,8 @@ env = esp-idf-nix.lib.mkEspIdfEnvFromUpstream {
   system = "aarch64-darwin";
   version = "6.0.1";
   srcHash = "sha256-4KJa686qc+u7XkF/GS2o53l1SpwP2EmdqAn/qmlL1yU=";
-  constraintsHash = "sha256-tT7QkI0wcxKCsS7QLXDohwCVJKGn+BIdaok1vW8p4Uc=";
+  # curl -fsSLO https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.0.txt
+  constraintsFile = ./espidf.constraints.v6.0.txt;
   toolsJson = ./tools.json;
 };
 ```
@@ -208,7 +212,7 @@ nix run github:Cbeck527/esp-idf-nix#eim -- select 5.5.4
 
 ## Add a New ESP-IDF Version
 
-Use the helper to prefetch the hashes and upstream `tools.json`:
+Use the helper to prefetch the source hash and write upstream snapshots (run from the repository root):
 
 ```sh
 nix run github:Cbeck527/esp-idf-nix#prefetch-version -- 5.5.5
@@ -217,7 +221,7 @@ nix run github:Cbeck527/esp-idf-nix#prefetch-version -- 5.5.5
 Then:
 
 - add the exact release to `data/versions.nix`
-- save the printed JSON under `data/tools/`
+- check in `data/tools/v<version>.json` and `data/constraints/v<version>.txt`
 - update `latestByMajor."5"` or `latestByMajor."6"` if that release should become the new `v5` or `v6` alias
 
 See [data/README.md](./data/README.md) for the exact workflow.
@@ -245,5 +249,5 @@ That version is not in `lib.knownVersions`, and you did not pass explicit metada
 Use one of these options:
 
 - add the version to your own checked-in metadata and call `mkEspIdfEnv`
-- pass `srcHash`, `constraintsHash`, and `toolsJson` directly
-- or call `mkEspIdfEnvFromUpstream` with `srcHash`, `constraintsHash`, and `toolsJson`
+- pass `srcHash`, `constraintsFile`, and `toolsJson` directly
+- or call `mkEspIdfEnvFromUpstream` with `srcHash`, `constraintsFile`, and `toolsJson`

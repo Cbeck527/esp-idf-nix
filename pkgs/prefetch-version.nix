@@ -7,7 +7,6 @@ pkgs.writeShellApplication {
     pkgs.coreutils
     pkgs.curl
     pkgs.gnused
-    pkgs.jq
     pkgs.nix
   ];
 
@@ -25,17 +24,20 @@ pkgs.writeShellApplication {
     major_minor="$(printf '%s' "$version" | cut -d. -f1,2)"
     tools_json_url="https://raw.githubusercontent.com/espressif/esp-idf/$tag/tools/tools.json"
     constraints_url="https://dl.espressif.com/dl/esp-idf/espidf.constraints.v$major_minor.txt"
-    suggested_tools_path="data/tools/$tag.json"
-    registry_tools_path="./tools/$tag.json"
+    tools_path="data/tools/$tag.json"
+    constraints_path="data/constraints/$tag.txt"
+
+    if [ ! -d data ]; then
+      echo "run prefetch-version from the repository root (data/ not found)" >&2
+      exit 1
+    fi
+
+    mkdir -p data/tools data/constraints
+    curl -fsSL "$tools_json_url" -o "$tools_path"
+    curl -fsSL "$constraints_url" -o "$constraints_path"
 
     tmpdir="$(mktemp -d)"
     trap 'rm -rf "$tmpdir"' EXIT
-
-    curl -fsSL "$tools_json_url" -o "$tmpdir/tools.json"
-
-    constraints_hash="$(
-      nix store prefetch-file --json "$constraints_url" | jq -r '.hash'
-    )"
 
     set +e
     nix build --no-link --impure --expr "
@@ -69,15 +71,14 @@ pkgs.writeShellApplication {
     fi
 
     cat <<EOF
-    version = "$version"
-    srcHash = "$src_hash"
-    constraintsHash = "$constraints_hash"
-    toolsJsonPath = $registry_tools_path
+    "$version" = {
+      srcHash = "$src_hash";
+      constraintsPath = ./constraints/$tag.txt;
+      toolsJsonPath = ./tools/$tag.json;
+    };
 
-    # Write this file to $suggested_tools_path
+    # Wrote $tools_path and $constraints_path
     # If this should become the v$major alias, update latestByMajor."$major" = "$version";
     EOF
-
-    cat "$tmpdir/tools.json"
   '';
 }

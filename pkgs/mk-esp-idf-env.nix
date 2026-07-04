@@ -4,10 +4,6 @@
 }:
 
 let
-  permittedInsecurePackages = [
-    "python3.13-ecdsa-0.19.1"
-  ];
-
   supportedMajors = builtins.attrNames versionRegistry.latestByMajor;
 
   espPlatforms = {
@@ -21,7 +17,8 @@ let
     system:
     import nixpkgs {
       inherit system;
-      config.permittedInsecurePackages = permittedInsecurePackages;
+      # esptool 4.x (ESP-IDF v5) depends on ecdsa, which nixpkgs marks insecure (CVE-2024-23342).
+      config.allowInsecurePredicate = pkg: (pkg.pname or "") == "ecdsa";
     };
 
   getKnownVersion =
@@ -61,7 +58,7 @@ let
       system,
       version,
       srcHash,
-      constraintsHash,
+      constraintsFile,
       toolsJson,
       pkgs ? mkPkgs system,
       idfSrc ? null,
@@ -113,7 +110,7 @@ let
           pkgs
           lib
           version
-          constraintsHash
+          constraintsFile
           ;
         idfSrc = resolvedIdfSrc;
       };
@@ -204,7 +201,7 @@ let
       system,
       version,
       srcHash ? null,
-      constraintsHash ? null,
+      constraintsFile ? null,
       toolsJson ? null,
       pkgs ? mkPkgs system,
     }:
@@ -215,7 +212,7 @@ let
 
         Either:
           - register the version in lib.knownVersions
-          - pass srcHash, constraintsHash, and toolsJson explicitly
+          - pass srcHash, constraintsFile, and toolsJson explicitly
           - or call lib.mkEspIdfEnvFromUpstream
       '';
 
@@ -227,11 +224,11 @@ let
         else
           throw errorMessage;
 
-      resolvedConstraintsHash =
-        if constraintsHash != null then
-          constraintsHash
+      resolvedConstraintsFile =
+        if constraintsFile != null then
+          constraintsFile
         else if knownVersion != null then
-          knownVersion.constraintsHash
+          knownVersion.constraintsPath
         else
           throw errorMessage;
 
@@ -250,7 +247,7 @@ let
         version
         ;
       srcHash = resolvedSrcHash;
-      constraintsHash = resolvedConstraintsHash;
+      constraintsFile = resolvedConstraintsFile;
       toolsJson = resolvedToolsJson;
     };
 
@@ -273,7 +270,7 @@ let
       system,
       version,
       srcHash ? null,
-      constraintsHash ? null,
+      constraintsFile ? null,
       toolsJson ? null,
       pkgs ? mkPkgs system,
     }:
@@ -293,17 +290,17 @@ let
               nix run .#prefetch-version -- ${version}
           '';
 
-      resolvedConstraintsHash =
-        if constraintsHash != null then
-          constraintsHash
+      resolvedConstraintsFile =
+        if constraintsFile != null then
+          constraintsFile
         else if knownVersion != null then
-          knownVersion.constraintsHash
+          knownVersion.constraintsPath
         else
           throw ''
-            lib.mkEspIdfEnvFromUpstream requires constraintsHash for ESP-IDF ${version}.
+            lib.mkEspIdfEnvFromUpstream requires constraintsFile for ESP-IDF ${version}.
 
-            Run:
-              nix run .#prefetch-version -- ${version}
+            Download and check in a snapshot:
+              curl -fsSLO https://dl.espressif.com/dl/esp-idf/espidf.constraints.v<major.minor>.txt
           '';
 
       resolvedToolsJson =
@@ -326,7 +323,7 @@ let
         ;
       toolsJson = resolvedToolsJson;
       srcHash = resolvedSrcHash;
-      constraintsHash = resolvedConstraintsHash;
+      constraintsFile = resolvedConstraintsFile;
     };
 in
 {

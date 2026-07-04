@@ -3,16 +3,12 @@
   lib,
   version,
   idfSrc,
-  constraintsHash,
+  constraintsFile,
 }:
 
 let
   versionMajorMinor = lib.versions.majorMinor version;
 
-  constraintsFile = pkgs.fetchurl {
-    url = "https://dl.espressif.com/dl/esp-idf/espidf.constraints.v${versionMajorMinor}.txt";
-    hash = constraintsHash;
-  };
 in
 pkgs.stdenv.mkDerivation {
   pname = "esp-idf";
@@ -43,20 +39,13 @@ pkgs.stdenv.mkDerivation {
     git commit --allow-empty -m "v${version}"
     git tag "v${version}"
 
-    sed -i \
-      -e 's/cryptography>=2.1.4,<45/cryptography>=2.1.4/' \
-      -e 's/click>=7.0,<8.2/click>=7.0/' \
-      -e 's/pyparsing>=3.1.0,<3.3/pyparsing>=3.1.0/' \
-      -e 's/esp-idf-nvs-partition-gen~=0.1.9/esp-idf-nvs-partition-gen>=0.1.9/' \
-      $out/tools/requirements/requirements.core.txt
-
     # Keep the constraints file inside the package so `idf.py` sees a configured tools path.
     mkdir -p $out/tools-path
     sed \
-      -e 's/,<45//' \
-      -e 's/,<8.2//' \
-      -e 's/,<3.3//' \
-      -e 's/~=0.1.9/>=0.1.9/' \
+      -e 's/^cryptography>=2\.1\.4.*/cryptography>=2.1.4/' \
+      -e 's/^click>=7\.0.*/click>=7.0/' \
+      -e 's/^pyparsing>=3\.1\.0.*/pyparsing>=3.1.0/' \
+      -e 's/^esp-idf-nvs-partition-gen~=.*/esp-idf-nvs-partition-gen>=0.1.9/' \
       ${constraintsFile} > $out/tools-path/espidf.constraints.v${versionMajorMinor}.txt
   '';
 
