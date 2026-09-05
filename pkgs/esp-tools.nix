@@ -20,6 +20,25 @@ let
     };
   };
 
+  # The upstream gdb tarballs ship one gdb binary per Python ABI they might
+  # embed against. Delete the unused ones that don't match our Python ABI,
+  # so autoPatchelfHook doesn't choke on them and the closure doesn't ship
+  # dead weight in broken binaries.
+  pruneUnusedGdbPythonAbis = ''
+    for f in "$out"/bin/*-gdb-3.*; do
+      [ -e "$f" ] || continue
+      case "$f" in
+        *-gdb-${pkgs.python3.pythonVersion}) : ;;
+        *) rm -f "$f" ;;
+      esac
+    done
+  '';
+
+  extraInstallSteps = {
+    xtensa-esp-elf-gdb = pruneUnusedGdbPythonAbis;
+    riscv32-esp-elf-gdb = pruneUnusedGdbPythonAbis;
+  };
+
   mkEspTool = toolDef:
     let
       recVersion = lib.findFirst (v: v.status == "recommended") (builtins.head toolDef.versions)
@@ -59,7 +78,7 @@ let
 
           installPhase = ''
             cp -r . $out
-          '';
+          '' + (extraInstallSteps.${toolDef.name} or "");
 
           # Re-sign Mach-O files in lib/ so dlopen() works on macOS.
           postFixup = lib.optionalString pkgs.stdenv.hostPlatform.isDarwin ''
