@@ -306,14 +306,42 @@ let
     meta.description = "ESP core dump analysis tool";
   };
 
-  esp-idf-monitor = py.buildPythonPackage {
-    pname = "esp-idf-monitor";
-    version = "1.9.0";
+  esp-pylib = py.buildPythonPackage {
+    pname = "esp-pylib";
+    version = "1.1.1";
     pyproject = true;
 
     src = pkgs.fetchurl {
-      url = "https://files.pythonhosted.org/packages/7c/86/64a8984759506fbbbfce14ec981ec736420aeb79ffc964166a507e3be065/esp_idf_monitor-1.9.0.tar.gz";
-      sha256 = "0c38da0c3d383d4b6305863b8df8ea6e09303ad5a6d5ba92ce71b31f1cf700ce";
+      url = "https://files.pythonhosted.org/packages/86/9b/28b2f779bbd3d0379c563200dc81b15e2134bd6980d8a4fa1e26a8ef24d3/esp_pylib-1.1.1.tar.gz";
+      sha256 = "4538b493d621727c8925cec7b065d6136e9afac9952ea56d61377b8628aacb4b";
+    };
+
+    build-system = [
+      py.setuptools
+      py.wheel
+    ];
+
+    dependencies = with py; [
+      rich
+      rich-click
+      click
+      pyserial
+    ];
+
+    doCheck = false;
+    pythonImportsCheck = [ "esp_pylib" ];
+
+    meta.description = "Shared Python utilities for Espressif tools";
+  };
+
+  esp-idf-monitor = py.buildPythonPackage {
+    pname = "esp-idf-monitor";
+    version = "1.10.0";
+    pyproject = true;
+
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/07/f6/6f97755905260363abfc07c2fa9139f690c078d2e8b2d23255ade7898c82/esp_idf_monitor-1.10.0.tar.gz";
+      sha256 = "7adb6927afdaaa8546fb4b8eed7a6d20cca9b0aa80cfa5839d80171b8ed790f5";
     };
 
     build-system = [ py.setuptools ];
@@ -321,17 +349,15 @@ let
     dependencies = [
       py.pyserial
       py.pyelftools
+      py.rich
+      py.rich-click
       esp-coredump
       esp-idf-panic-decoder
-    ];
-
-    nativeBuildInputs = [ py.pythonRelaxDepsHook ];
-    pythonRelaxDeps = [
-      "esp-coredump"
-      "esp-idf-panic-decoder"
+      esp-pylib
     ];
 
     doCheck = false;
+    pythonImportsCheck = [ "esp_idf_monitor" ];
 
     meta.description = "ESP-IDF serial monitor with panic decoding";
   };
