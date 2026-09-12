@@ -15,10 +15,6 @@ let
       url = "https://github.com/espressif/idf-im-ui/releases/download/v${version}/eim-cli-linux-aarch64.zip";
       hash = "sha256-jhSyvxOGXh39UdTELFz4YP9MEWWCJbU/3fr5YodyOfo=";
     };
-    x86_64-darwin = {
-      url = "https://github.com/espressif/idf-im-ui/releases/download/v${version}/eim-cli-macos-x64.zip";
-      hash = "sha256-GNGIZrsIRKv4rYbiuIUx8KbZ//BHPzyxRoemX2ro3gs=";
-    };
     aarch64-darwin = {
       url = "https://github.com/espressif/idf-im-ui/releases/download/v${version}/eim-cli-macos-aarch64.zip";
       hash = "sha256-y8ea/tKW0+M5PRd9afA48dLrIDQptuJW2fTm6dzwoxw=";

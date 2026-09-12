@@ -75,7 +75,6 @@ Use `mkEspIdfEnvForMajor` when you want to stay on the latest registered release
       supportedSystems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
         "aarch64-darwin"
       ];
 
@@ -230,7 +229,6 @@ See [data/README.md](./data/README.md) for the exact workflow.
 
 - `x86_64-linux`
 - `aarch64-linux`
-- `x86_64-darwin`
 - `aarch64-darwin`
 
 ## Troubleshooting

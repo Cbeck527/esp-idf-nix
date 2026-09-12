@@ -22,9 +22,6 @@ url_for_system() {
     aarch64-linux)
       printf '%s\n' "https://github.com/espressif/idf-im-ui/releases/download/v${version}/eim-cli-linux-aarch64.zip"
       ;;
-    x86_64-darwin)
-      printf '%s\n' "https://github.com/espressif/idf-im-ui/releases/download/v${version}/eim-cli-macos-x64.zip"
-      ;;
     aarch64-darwin)
       printf '%s\n' "https://github.com/espressif/idf-im-ui/releases/download/v${version}/eim-cli-macos-aarch64.zip"
       ;;
@@ -56,7 +53,6 @@ prefetch_hash() {
 systems=(
   x86_64-linux
   aarch64-linux
-  x86_64-darwin
   aarch64-darwin
 )
 
