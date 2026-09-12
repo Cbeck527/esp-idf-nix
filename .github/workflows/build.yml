@@ -1,0 +1,82 @@
+name: Build and cache
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.system }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+          - system: aarch64-darwin
+            runner: macos-15
+    defaults:
+      run:
+        shell: bash
+    env:
+      NIX_SYSTEM: ${{ matrix.system }}
+      PUSH_CACHE: ${{ github.repository == 'Cbeck527/esp-idf-nix' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check Cachix credentials
+        if: env.PUSH_CACHE == 'true'
+        env:
+          CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+        run: |
+          if [ -z "$CACHIX_AUTH_TOKEN" ]; then
+            echo "::error::Add a Cachix write token as the CACHIX_AUTH_TOKEN repository secret."
+            exit 1
+          fi
+
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31.11.1
+        with:
+          extra_nix_config: |
+            accept-flake-config = true
+
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: esp-idf-nix
+          authToken: ${{ env.PUSH_CACHE == 'true' && secrets.CACHIX_AUTH_TOKEN || '' }}
+          skipPush: ${{ env.PUSH_CACHE != 'true' }}
+
+      - name: Check flake
+        run: |
+          test "$(nix eval --impure --raw --expr builtins.currentSystem)" = "$NIX_SYSTEM"
+          nix flake check --all-systems --no-build --no-write-lock-file
+
+      - name: Build all packages
+        run: |
+          nix build --no-link --print-build-logs --impure --expr '
+            let
+              flake = builtins.getFlake (toString ./.);
+            in
+            builtins.attrValues (builtins.getAttr builtins.currentSystem flake.packages)
+          '
+
+      - name: Build all development shells
+        run: |
+          shells=$(nix eval --raw ".#devShells.$NIX_SYSTEM" \
+            --apply 'shells: builtins.concatStringsSep "\n" (builtins.attrNames shells)')
+          while IFS= read -r shell; do
+            nix develop --print-build-logs ".#$shell" --command true
+          done <<< "$shells"

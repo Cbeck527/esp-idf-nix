@@ -35,6 +35,31 @@ idf.py build
 
 The generated project uses the packaged ESP-IDF shell for its chosen major version.
 
+### Use the binary cache
+
+The flake and both project templates configure the public
+[`esp-idf-nix` Cachix cache](https://esp-idf-nix.cachix.org). Accept the cache settings
+when Nix prompts, or use `nix develop --accept-flake-config`.
+
+For existing projects, flakes that use `esp-idf-nix` as an input, or system-wide
+setup:
+
+```sh
+cachix use esp-idf-nix
+```
+
+Alternatively, add these settings to your Nix configuration:
+
+```ini
+extra-substituters = https://esp-idf-nix.cachix.org
+extra-trusted-public-keys = esp-idf-nix.cachix.org-1:6qHkAxmub00GqSujpkTqbL3XZvT6d4g8/13FcL+wrpQ=
+```
+
+The cache is public, so downloads need no token. Templates follow this flake's
+locked nixpkgs revision to match the packages built by CI. Overriding nixpkgs,
+applying overlays, or selecting a release that CI does not build can require local
+builds. Nix builds any paths missing from the cache as usual.
+
 ### Try the flake directly
 
 ```sh
@@ -62,11 +87,8 @@ Use `mkEspIdfEnvForMajor` when you want to stay on the latest registered release
 ```nix
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    esp-idf-nix = {
-      url = "github:Cbeck527/esp-idf-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    esp-idf-nix.url = "github:Cbeck527/esp-idf-nix";
+    nixpkgs.follows = "esp-idf-nix/nixpkgs";
   };
 
   outputs =
@@ -230,6 +252,27 @@ See [data/README.md](./data/README.md) for the exact workflow.
 - `x86_64-linux`
 - `aarch64-linux`
 - `aarch64-darwin`
+
+## CI and Cache Publishing
+
+[GitHub Actions](.github/workflows/build.yml) builds every exported package and
+enters every development shell on native runners for all supported platforms:
+
+| Nix system | GitHub runner |
+| --- | --- |
+| `x86_64-linux` | `ubuntu-24.04` |
+| `aarch64-linux` | `ubuntu-24.04-arm` |
+| `aarch64-darwin` | `macos-15` |
+
+Pushes to `main` in `Cbeck527/esp-idf-nix` publish build results and their dependencies
+to Cachix. Pull requests build with read-only cache access. The workflow also
+supports manual runs; only runs on the upstream `main` branch publish.
+
+To enable publishing, create a per-cache Cachix token with write access to
+`esp-idf-nix`, then add it as the repository Actions secret `CACHIX_AUTH_TOKEN` under **Settings →
+Secrets and variables → Actions**. Publishing jobs fail with a setup message if the
+secret is missing. Run **Build and cache** on `main` after adding the secret to
+populate the cache.
 
 ## Troubleshooting
 

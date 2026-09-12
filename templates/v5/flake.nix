@@ -1,12 +1,16 @@
 {
   description = "ESP-IDF v5 project";
 
+  nixConfig = {
+    extra-substituters = [ "https://esp-idf-nix.cachix.org" ];
+    extra-trusted-public-keys = [
+      "esp-idf-nix.cachix.org-1:6qHkAxmub00GqSujpkTqbL3XZvT6d4g8/13FcL+wrpQ="
+    ];
+  };
+
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    esp-idf-nix = {
-      url = "github:Cbeck527/esp-idf-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    esp-idf-nix.url = "github:Cbeck527/esp-idf-nix";
+    nixpkgs.follows = "esp-idf-nix/nixpkgs";
   };
 
   outputs =
