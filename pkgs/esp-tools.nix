@@ -1,14 +1,50 @@
-{ pkgs, lib, espPlatform, toolsJson }:
+{
+  pkgs,
+  lib,
+  espPlatform,
+  toolsJson,
+}:
 
 let
 
   linuxBuildInputs = with pkgs; {
-    xtensa-esp-elf = [ stdenv.cc.cc.lib zlib ];
-    riscv32-esp-elf = [ stdenv.cc.cc.lib zlib ];
-    xtensa-esp-elf-gdb = [ stdenv.cc.cc.lib zlib ncurses5 expat python3 gmp mpfr ];
-    riscv32-esp-elf-gdb = [ stdenv.cc.cc.lib zlib ncurses5 expat python3 gmp mpfr ];
-    esp32ulp-elf = [ stdenv.cc.cc.lib zlib ];
-    openocd-esp32 = [ stdenv.cc.cc.lib zlib libusb1 hidapi libftdi1 ];
+    xtensa-esp-elf = [
+      stdenv.cc.cc.lib
+      zlib
+    ];
+    riscv32-esp-elf = [
+      stdenv.cc.cc.lib
+      zlib
+    ];
+    xtensa-esp-elf-gdb = [
+      stdenv.cc.cc.lib
+      zlib
+      ncurses5
+      expat
+      python3
+      gmp
+      mpfr
+    ];
+    riscv32-esp-elf-gdb = [
+      stdenv.cc.cc.lib
+      zlib
+      ncurses5
+      expat
+      python3
+      gmp
+      mpfr
+    ];
+    esp32ulp-elf = [
+      stdenv.cc.cc.lib
+      zlib
+    ];
+    openocd-esp32 = [
+      stdenv.cc.cc.lib
+      zlib
+      libusb1
+      hidapi
+      libftdi1
+    ];
     esp-rom-elfs = [ ];
   };
 
@@ -20,13 +56,16 @@ let
     };
   };
 
-  mkEspTool = toolDef:
+  mkEspTool =
+    toolDef:
     let
-      recVersion = lib.findFirst (v: v.status == "recommended") (builtins.head toolDef.versions)
-        toolDef.versions;
+      recVersion = lib.findFirst (
+        v: v.status == "recommended"
+      ) (builtins.head toolDef.versions) toolDef.versions;
 
       # Some tools publish one archive for every host, others use `any`.
       platformSrc = recVersion.${espPlatform} or recVersion.any or null;
+      isLinuxGdb = pkgs.stdenv.hostPlatform.isLinux && lib.hasSuffix "-gdb" toolDef.name;
     in
     if platformSrc == null then
       null
@@ -78,6 +117,39 @@ let
           };
         }
         // (toolOverrides.${toolDef.name} or { })
+        // lib.optionalAttrs isLinuxGdb {
+          nativeBuildInputs = [
+            pkgs.autoPatchelfHook
+            pkgs.makeWrapper
+          ];
+
+          preFixup = ''
+            # Upstream bundles one GDB per Python version; keep the one Nix provides.
+            mkdir -p "$out/libexec"
+            mv "$out/bin/${toolDef.name}-${pkgs.python3.pythonVersion}" "$out/libexec/${toolDef.name}"
+            rm -f "$out/bin/${toolDef.name}"-[0-9]* "$out/bin/${toolDef.name}-no-python"
+
+            for gdb in "$out"/bin/*-elf-gdb; do
+              args=(--set PYTHONHOME "${pkgs.python3}")
+              ${lib.optionalString (toolDef.name == "xtensa-esp-elf-gdb") ''
+                chip=$(basename "$gdb" -elf-gdb)
+                chip=''${chip#xtensa-}
+                args+=(--set XTENSA_GNU_CONFIG "$out/lib/xtensa_$chip.so")
+              ''}
+              makeWrapper "$out/libexec/${toolDef.name}" "$gdb" "''${args[@]}"
+            done
+          '';
+
+          doInstallCheck = true;
+          installCheckPhase = ''
+            runHook preInstallCheck
+            for gdb in "$out"/bin/*-elf-gdb; do
+              env -i "$gdb" --batch --nx --quiet \
+                -ex 'python import gdb, json, sys; assert sys.version.startswith("${pkgs.python3.pythonVersion}.")'
+            done
+            runHook postInstallCheck
+          '';
+        }
       );
 
   alwaysTools = builtins.filter (t: t.install == "always") toolsJson.tools;
