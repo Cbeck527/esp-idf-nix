@@ -292,3 +292,14 @@ Use one of these options:
 - add the version to your own checked-in metadata and call `mkEspIdfEnv`
 - pass `srcHash`, `constraintsFile`, and `toolsJson` directly
 - or call `mkEspIdfEnvFromUpstream` with `srcHash`, `constraintsFile`, and `toolsJson`
+
+## License
+
+The original Nix expressions, scripts, project templates, and documentation in this
+repository are licensed under the [MIT License](LICENSE).
+
+Vendored metadata under `data/tools/` and `data/constraints/` is third-party
+material; see [metadata provenance and licensing](data/README.md#provenance-and-licensing).
+
+ESP-IDF, the toolchains, and other packages fetched by this flake retain their own
+upstream licenses.
