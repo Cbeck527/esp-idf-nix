@@ -177,13 +177,12 @@ let
       throw "python-profiles.nix requires constraintsFile when espIdfVersion is set"
     else
       pkgs.runCommand "espidf-constraints.v${releaseLine}" { } ''
-        cp ${constraintsFile} "$out"
         for pattern in \
           '^cryptography>=2\.1\.4.*$' \
           '^click>=7\.0.*$' \
           '^pyparsing>=3\.1\.0.*$' \
           '^esp-idf-nvs-partition-gen~=0\.1\.9$'; do
-          count=$(grep -Ec "$pattern" "$out")
+          count=$(grep -Ec "$pattern" "${constraintsFile}")
           test "$count" -eq 1 || {
             echo "expected exactly one upstream constraint matching $pattern" >&2
             exit 1
@@ -195,8 +194,7 @@ let
           -e 's/^click>=7\.0.*/click>=7.0/' \
           -e 's/^pyparsing>=3\.1\.0.*/pyparsing>=3.1.0/' \
           -e 's/^esp-idf-nvs-partition-gen~=.*/esp-idf-nvs-partition-gen>=0.1.9/' \
-          "$out" > "$out.tmp"
-        mv "$out.tmp" "$out"
+          "${constraintsFile}" > "$out"
       '';
 in
 {
