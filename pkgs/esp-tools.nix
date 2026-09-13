@@ -3,6 +3,7 @@
   lib,
   espPlatform,
   toolsJson,
+  pythonEnv,
 }:
 
 let
@@ -96,6 +97,12 @@ let
 
           dontBuild = true;
 
+          dontStrip = lib.elem toolDef.name [
+            "xtensa-esp-elf"
+            "riscv32-esp-elf"
+            "esp32ulp-elf"
+          ];
+
           installPhase = ''
             cp -r . $out
           '';
@@ -130,7 +137,10 @@ let
             rm -f "$out/bin/${toolDef.name}"-[0-9]* "$out/bin/${toolDef.name}-no-python"
 
             for gdb in "$out"/bin/*-elf-gdb; do
-              args=(--set PYTHONHOME "${pkgs.python3}")
+              args=(
+                --set PYTHONHOME "${pkgs.python3}"
+                --prefix PYTHONPATH : "${pythonEnv}/${pkgs.python3.sitePackages}"
+              )
               ${lib.optionalString (toolDef.name == "xtensa-esp-elf-gdb") ''
                 chip=$(basename "$gdb" -elf-gdb)
                 chip=''${chip#xtensa-}
@@ -145,7 +155,7 @@ let
             runHook preInstallCheck
             for gdb in "$out"/bin/*-elf-gdb; do
               env -i "$gdb" --batch --nx --quiet \
-                -ex 'python import gdb, json, sys; assert sys.version.startswith("${pkgs.python3.pythonVersion}.")'
+                -ex 'python import gdb, freertos_gdb, esptool, sys; assert sys.version.startswith("${pkgs.python3.pythonVersion}.")'
             done
             runHook postInstallCheck
           '';

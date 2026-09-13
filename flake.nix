@@ -10,13 +10,11 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
     {
       nixpkgs,
-      flake-utils,
       ...
     }:
     let
@@ -49,6 +47,13 @@
           envsByMajor = builtins.mapAttrs (
             _major: version: envLib.mkEspIdfEnv { inherit system version; }
           ) latestByMajor;
+          acceptanceChecks = import ./pkgs/checks.nix {
+            inherit
+              pkgs
+              envsByMajor
+              prefetchVersion
+              ;
+          };
           sortedMajors = builtins.sort lib.versionOlder supportedMajors;
           defaultMajor = lib.last sortedMajors;
 
@@ -92,9 +97,11 @@
             prefetch-version = prefetchVersion;
           };
           devShells = majorShells;
+          checks = acceptanceChecks;
           apps = {
-            prefetch-version = flake-utils.lib.mkApp {
-              drv = prefetchVersion;
+            prefetch-version = {
+              type = "app";
+              program = "${prefetchVersion}/bin/prefetch-version";
             };
           };
         }
@@ -106,7 +113,6 @@
         inherit (envLib)
           mkEspIdfEnv
           mkEspIdfEnvForMajor
-          mkEspIdfEnvFromUpstream
           ;
       };
 
@@ -122,6 +128,7 @@
 
       packages = lib.mapAttrs (_: outputs: outputs.packages) systemOutputs;
       devShells = lib.mapAttrs (_: outputs: outputs.devShells) systemOutputs;
+      checks = lib.mapAttrs (_: outputs: outputs.checks) systemOutputs;
       apps = lib.mapAttrs (_: outputs: outputs.apps) systemOutputs;
     };
 }

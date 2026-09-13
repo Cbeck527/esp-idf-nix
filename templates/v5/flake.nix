@@ -10,36 +10,14 @@
 
   inputs = {
     esp-idf-nix.url = "github:Cbeck527/esp-idf-nix";
-    nixpkgs.follows = "esp-idf-nix/nixpkgs";
   };
 
   outputs =
     {
-      nixpkgs,
       esp-idf-nix,
       ...
     }:
-    let
-      supportedSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
-
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-    in
     {
-      devShells = forAllSystems (
-        system:
-        let
-          env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
-            inherit system;
-            major = "5";
-          };
-        in
-        {
-          default = env.devShells.full;
-        }
-      );
+      devShells = builtins.mapAttrs (_system: shells: { default = shells.v5; }) esp-idf-nix.devShells;
     };
 }
