@@ -80,3 +80,7 @@ jobs:
           while IFS= read -r shell; do
             nix develop --print-build-logs ".#$shell" --command true
           done <<< "$shells"
+
+      - name: Build and run acceptance checks
+        run: |
+          nix flake check --no-write-lock-file --print-build-logs

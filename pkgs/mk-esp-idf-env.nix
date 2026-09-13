@@ -38,6 +38,34 @@ let
         Supported majors: ${builtins.concatStringsSep ", " supportedMajors}
       '';
 
+  normalizeVersion =
+    version:
+    let
+      versionMatch = builtins.match "^([0-9]+\\.[0-9]+(\\.[0-9]+)?)([-+][0-9A-Za-z.-]+)?$" version;
+    in
+    if versionMatch == null then
+      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.4 or 6.0.2, with an optional prerelease suffix."
+    else
+      builtins.elemAt versionMatch 0;
+
+  validateVersion =
+    {
+      version,
+      pkgs,
+    }:
+    let
+      numericVersion = normalizeVersion version;
+      profiles = import ./python-profiles.nix {
+        inherit pkgs;
+        lib = pkgs.lib;
+      };
+      releaseLine = profiles.releaseLineFor numericVersion;
+    in
+    if !(builtins.elem releaseLine profiles.supportedReleaseLines) then
+      throw "Unsupported ESP-IDF Python profile '${releaseLine}' for version ${version}. Ask a maintainer to add and validate that profile before using it. Supported profiles: ${builtins.concatStringsSep ", " profiles.supportedReleaseLines}."
+    else
+      version;
+
   loadToolsJson =
     toolsJson:
     let
@@ -60,28 +88,16 @@ let
       constraintsFile,
       toolsJson,
       pkgs ? mkPkgs system,
-      idfSrc ? null,
     }:
     let
       lib = pkgs.lib;
+      normalizedVersion = normalizeVersion version;
 
       espPlatform =
         if builtins.hasAttr system espPlatforms then
           espPlatforms.${system}
         else
           throw "Unsupported system for ESP-IDF tools: ${system}";
-
-      resolvedIdfSrc =
-        if idfSrc != null then
-          idfSrc
-        else
-          pkgs.fetchFromGitHub {
-            owner = "espressif";
-            repo = "esp-idf";
-            rev = "v${version}";
-            fetchSubmodules = true;
-            hash = srcHash;
-          };
 
       eim = import ./eim.nix {
         inherit pkgs system;
@@ -94,6 +110,7 @@ let
           espPlatform
           toolsJson
           ;
+        pythonEnv = espPython.pythonEnv;
       };
 
       espPython = import ./python-packages.nix {
@@ -101,7 +118,8 @@ let
           pkgs
           lib
           ;
-        espIdfVersion = version;
+        espIdfVersion = normalizedVersion;
+        inherit constraintsFile;
       };
 
       esp-idf = import ./esp-idf.nix {
@@ -109,9 +127,14 @@ let
           pkgs
           lib
           version
-          constraintsFile
           ;
-        idfSrc = resolvedIdfSrc;
+        idfSrc = pkgs.fetchFromGitHub {
+          owner = "espressif";
+          repo = "esp-idf";
+          rev = "v${version}";
+          fetchSubmodules = true;
+          hash = srcHash;
+        };
       };
 
       commonPackages =
@@ -124,9 +147,15 @@ let
           bison
           gperf
           dfu-util
-          eim
         ])
         ++ builtins.attrValues espTools;
+
+      shellSetup = ''
+        export IDF_PYTHON_ENV_PATH="${espPython.pythonEnv}"
+        export IDF_PYTHON_CHECK_CONSTRAINTS=no
+        export IDF_TOOLS_PATH="''${IDF_TOOLS_PATH:-$HOME/.espressif}"
+        mkdir -p "$IDF_TOOLS_PATH"
+      '';
     in
     # Check the host before exposing any part of the environment.
     builtins.seq espPlatform {
@@ -153,14 +182,32 @@ let
           };
 
           shellHook = ''
+            ${shellSetup}
+            if [ -n "''${IDF_PATH:-}" ]; then
+              if ! idf_version="$(${espPython.pythonEnv}/bin/python -c '
+            import os
+            import sys
+            sys.path.insert(0, os.path.join(os.environ["IDF_PATH"], "tools"))
+            from idf_py_actions.tools import idf_version
+            version = idf_version()
+            if version is None:
+                raise SystemExit(1)
+            print(version.removeprefix("v"))
+            ')"; then
+                echo "error: could not determine ESP-IDF version from IDF_PATH=$IDF_PATH" >&2
+                exit 1
+              fi
+              export ESP_IDF_VERSION="$idf_version"
+            fi
             echo "ESP-IDF development environment (tools only)"
             echo "Xtensa GCC:  $(xtensa-esp-elf-gcc --version | head -1)"
             echo "RISC-V GCC:  $(riscv32-esp-elf-gcc --version | head -1)"
             echo "OpenOCD:     $(openocd --version 2>&1 | head -1)"
-            if [ -z "$IDF_PATH" ]; then
+            if [ -z "''${IDF_PATH:-}" ]; then
               echo ""
-              echo "  NOTE: IDF_PATH not set. Either:"
-              echo "    export IDF_PATH=/path/to/your/esp-idf"
+              echo "  NOTE: IDF_PATH not set. Set it before entering or re-entering this tools shell:"
+              echo "    IDF_PATH=/path/to/your/esp-idf nix develop .#v5-tools"
+              echo "    (use .#v6-tools for ESP-IDF 6)"
               echo "    or use a full shell such as 'nix develop .#v5' or '.#v6'"
             fi
           '';
@@ -171,14 +218,13 @@ let
 
           env = {
             IDF_PATH = "${esp-idf}";
-            IDF_TOOLS_PATH = "${esp-idf}/tools-path";
-            IDF_PYTHON_ENV_PATH = "${espPython.pythonEnv}";
             ESP_IDF_VERSION = version;
             ESP_ROM_ELF_DIR = "${espTools.esp-rom-elfs}";
             OPENOCD_SCRIPTS = "${espTools.openocd-esp32}/share/openocd/scripts";
           };
 
           shellHook = ''
+            ${shellSetup}
             export PATH="${esp-idf}/tools:$PATH"
 
             export GIT_CONFIG_COUNT=''${GIT_CONFIG_COUNT:-0}
@@ -206,14 +252,16 @@ let
       pkgs ? mkPkgs system,
     }:
     let
+      validatedVersion = validateVersion {
+        inherit version pkgs;
+      };
       knownVersion = getKnownVersion version;
       errorMessage = ''
         Unknown ESP-IDF version ${version} for lib.mkEspIdfEnv.
 
         Either:
           - register the version in lib.knownVersions
-          - pass srcHash, constraintsFile, and toolsJson explicitly
-          - or call lib.mkEspIdfEnvFromUpstream
+          - or pass srcHash, constraintsFile, and toolsJson explicitly
       '';
 
       resolvedSrcHash =
@@ -240,16 +288,13 @@ let
         else
           throw errorMessage;
     in
-    mkEnv {
-      inherit
-        pkgs
-        system
-        version
-        ;
+    builtins.seq validatedVersion (mkEnv {
+      inherit pkgs system;
+      version = validatedVersion;
       srcHash = resolvedSrcHash;
       constraintsFile = resolvedConstraintsFile;
       toolsJson = resolvedToolsJson;
-    };
+    });
 
   mkEspIdfEnvForMajor =
     {
@@ -264,72 +309,10 @@ let
         ;
       version = getLatestVersionForMajor major;
     };
-
-  mkEspIdfEnvFromUpstream =
-    {
-      system,
-      version,
-      srcHash ? null,
-      constraintsFile ? null,
-      toolsJson ? null,
-      pkgs ? mkPkgs system,
-    }:
-    let
-      knownVersion = getKnownVersion version;
-
-      resolvedSrcHash =
-        if srcHash != null then
-          srcHash
-        else if knownVersion != null then
-          knownVersion.srcHash
-        else
-          throw ''
-            lib.mkEspIdfEnvFromUpstream requires srcHash for ESP-IDF ${version}.
-
-            Run:
-              nix run .#prefetch-version -- ${version}
-          '';
-
-      resolvedConstraintsFile =
-        if constraintsFile != null then
-          constraintsFile
-        else if knownVersion != null then
-          knownVersion.constraintsPath
-        else
-          throw ''
-            lib.mkEspIdfEnvFromUpstream requires constraintsFile for ESP-IDF ${version}.
-
-            Download and check in a snapshot:
-              curl -fsSLO https://dl.espressif.com/dl/esp-idf/espidf.constraints.v<major.minor>.txt
-          '';
-
-      resolvedToolsJson =
-        if toolsJson != null then
-          loadToolsJson toolsJson
-        else if knownVersion != null then
-          loadToolsJson knownVersion.toolsJsonPath
-        else
-          throw ''
-            lib.mkEspIdfEnvFromUpstream requires toolsJson for ESP-IDF ${version}.
-
-            Pass toolsJson explicitly, or register the version in lib.knownVersions.
-          '';
-    in
-    mkEnv {
-      inherit
-        pkgs
-        system
-        version
-        ;
-      toolsJson = resolvedToolsJson;
-      srcHash = resolvedSrcHash;
-      constraintsFile = resolvedConstraintsFile;
-    };
 in
 {
   inherit
     mkEspIdfEnv
     mkEspIdfEnvForMajor
-    mkEspIdfEnvFromUpstream
     ;
 }

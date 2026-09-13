@@ -3,13 +3,7 @@
   lib,
   version,
   idfSrc,
-  constraintsFile,
 }:
-
-let
-  versionMajorMinor = lib.versions.majorMinor version;
-
-in
 pkgs.stdenv.mkDerivation {
   pname = "esp-idf";
   inherit version;
@@ -38,20 +32,10 @@ pkgs.stdenv.mkDerivation {
     git config user.email "nix@localhost"
     git commit --allow-empty -m "v${version}"
     git tag "v${version}"
-
-    # Keep the constraints file inside the package so `idf.py` sees a configured tools path.
-    mkdir -p $out/tools-path
-    sed \
-      -e 's/^cryptography>=2\.1\.4.*/cryptography>=2.1.4/' \
-      -e 's/^click>=7\.0.*/click>=7.0/' \
-      -e 's/^pyparsing>=3\.1\.0.*/pyparsing>=3.1.0/' \
-      -e 's/^esp-idf-nvs-partition-gen~=.*/esp-idf-nvs-partition-gen>=0.1.9/' \
-      ${constraintsFile} > $out/tools-path/espidf.constraints.v${versionMajorMinor}.txt
   '';
 
   passthru = {
     inherit version;
-    toolsPath = placeholder "out" + "/tools-path";
   };
 
   meta = {

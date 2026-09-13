@@ -34,6 +34,8 @@ idf.py build
 ```
 
 The generated project uses the packaged ESP-IDF shell for its chosen major version.
+The packaged SDK retains deterministic Git metadata because upstream `idf.py`
+reads Git revision information; `version.txt` alone is insufficient.
 
 ### Use the binary cache
 
@@ -142,41 +144,30 @@ env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
-  pkgs = import nixpkgs { system = "aarch64-darwin"; };
   system = "aarch64-darwin";
   version = "5.5.4";
 };
 ```
 
-Note: when you pass your own `pkgs`, ESP-IDF v5 environments need nixpkgs' insecure ecdsa allowed, e.g. `config.allowInsecurePredicate = pkg: (pkg.pname or "") == "ecdsa";`.
+When a project needs custom Nixpkgs configuration, this complete v5 example
+includes the `ecdsa` exception required by the pinned v5 Python dependencies:
 
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
-  pkgs = import nixpkgs { system = "aarch64-darwin"; };
+  pkgs = import nixpkgs {
+    system = "aarch64-darwin";
+    config.allowInsecurePredicate = pkg: (pkg.pname or "") == "ecdsa";
+  };
   system = "aarch64-darwin";
   version = "5.5.4";
-  srcHash = "sha256-rItbBrwItkfJf8tKImAQsiXDR95sr0LqaM51gDZG/nI=";
-  # curl -fsSLO https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt
-  constraintsFile = ./espidf.constraints.v5.5.txt;
-  toolsJson = ./tools.json;
 };
 ```
 
-If you want an arbitrary upstream ESP-IDF tag without registering it in `lib.knownVersions`, use `mkEspIdfEnvFromUpstream` with explicit metadata:
-
-```nix
-env = esp-idf-nix.lib.mkEspIdfEnvFromUpstream {
-  pkgs = import nixpkgs { system = "aarch64-darwin"; };
-  system = "aarch64-darwin";
-  version = "6.0.2";
-  srcHash = "sha256-dVdJ+aUjMJyWoz+wOwA0R6XH3JRq0VBpC1sAH/aLECs=";
-  # curl -fsSLO https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.0.txt
-  constraintsFile = ./espidf.constraints.v6.0.txt;
-  toolsJson = ./tools.json;
-};
-```
-
-This keeps the helper usable in strict Nix environments without import-from-derivation.
+For a release that is not registered in `lib.knownVersions`, pass the exact
+source hash, constraints snapshot, and tools manifest you keep beside your
+flake directly to `mkEspIdfEnv`. The version still has to belong to a
+supported Python profile (currently ESP-IDF 5.5 or 6.0); adding another
+release line requires a maintainer to add and validate its profile.
 
 To inspect the exact packages for a registered version:
 
@@ -231,6 +222,42 @@ nix run github:Cbeck527/esp-idf-nix#eim -- list
 nix run github:Cbeck527/esp-idf-nix#eim -- select 5.5.4
 ```
 
+## Python and tool state
+
+Every shell uses one Nix-managed Python environment. It exports
+`IDF_PYTHON_ENV_PATH` and sets
+[`IDF_PYTHON_CHECK_CONSTRAINTS=no`](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/tools/idf-tools.html#custom-installation); the effective
+ESP-IDF constraints are immutable store files and are checked explicitly by
+the flake's Nix acceptance checks. `IDF_TOOLS_PATH` is honored when supplied,
+and otherwise defaults to `~/.espressif`. Component-manager profiles therefore
+remain writable and persist across shell sessions.
+
+The current Python profiles contain four deliberate constraint relaxations:
+`cryptography>=2.1.4`, `click>=7.0`, `pyparsing>=3.1.0`, and
+`esp-idf-nvs-partition-gen>=0.1.9`. Nix checks require each upstream line to be
+present exactly once before producing the immutable effective constraints;
+maintainers adding a new ESP-IDF line must add its profile and validate that
+profile's effective constraints.
+
+The tools-only shell supplies the compilers and Python tools while leaving
+your SDK checkout in `IDF_PATH`. Invoke that checkout explicitly when needed:
+
+```sh
+export IDF_PATH="$HOME/src/esp-idf"
+nix develop github:Cbeck527/esp-idf-nix#v6-tools --command \
+  python "$IDF_PATH/tools/idf.py" build
+```
+
+To add project tools, extend the exported shell while preserving its
+environment and initialization:
+
+```nix
+devShells.default = esp-idf-nix.devShells.${system}.v5.overrideAttrs (old: {
+  # Keep the exported SDK variables and shell hook, then add one package.
+  nativeBuildInputs = old.nativeBuildInputs ++ [ pkgs.hello ];
+});
+```
+
 ## Add a New ESP-IDF Version
 
 Use the helper to prefetch the source hash and write upstream snapshots (run from the repository root):
@@ -266,7 +293,9 @@ enters every development shell on native runners for all supported platforms:
 
 Pushes to `main` in `Cbeck527/esp-idf-nix` publish build results and their dependencies
 to Cachix. Pull requests build with read-only cache access. The workflow also
-supports manual runs; only runs on the upstream `main` branch publish.
+supports manual runs; it evaluates the package and shell graph, then runs the
+runtime, archive, profile-state, EIM help, and per-target firmware checks.
+Only runs on the upstream `main` branch publish.
 
 To enable publishing, create a per-cache Cachix token with write access to
 `esp-idf-nix`, then add it as the repository Actions secret `CACHIX_AUTH_TOKEN` under **Settings →
@@ -291,7 +320,6 @@ Use one of these options:
 
 - add the version to your own checked-in metadata and call `mkEspIdfEnv`
 - pass `srcHash`, `constraintsFile`, and `toolsJson` directly
-- or call `mkEspIdfEnvFromUpstream` with `srcHash`, `constraintsFile`, and `toolsJson`
 
 ## License
 

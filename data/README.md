@@ -45,7 +45,11 @@ not assign them MIT or infer Apache-2.0 from the separate ESP-IDF repository.
 
 ## Workflow
 
-1. From the repository root, run the helper for the version you want to add. It writes `data/tools/v<version>.json` and `data/constraints/v<version>.txt`.
+1. From the repository root, run the helper for the version you want to add. It
+   accepts `N.N`, `N.N.N`, and prerelease tags such as `6.0-rc1`. The complete
+   tag is used for the tools snapshot and source hash; the numeric `N.N` line
+   selects the constraints URL. Both snapshots are staged and validated before
+   either destination is replaced.
 
 ```sh
 nix run path:.#prefetch-version -- 5.5.5
@@ -99,11 +103,24 @@ nix develop --impure --expr '
 nix develop path:.#v5 -c true
 ```
 
+Run the complete local acceptance set, including runtime, archive, profile
+state, EIM, and both firmware targets for each major:
+
+```sh
+nix flake check --no-write-lock-file --print-build-logs
+```
+
 ## Notes
 
 - `toolsJsonPath` and `constraintsPath` are relative to `data/versions.nix`, so use `./tools/...` and `./constraints/...`.
 - Keep filenames aligned with the upstream tag: `data/tools/v<version>.json` and `data/constraints/v<version>.txt`.
 - `v5` and `v6` are explicit aliases backed by `latestByMajor`.
-- Use `mkEspIdfEnvFromUpstream` when you want dynamic version support without registering the version in `data/versions.nix`.
-- `mkEspIdfEnvFromUpstream` still needs explicit upstream metadata, including `toolsJson`.
+- Exact versions outside `data/versions.nix` can use `mkEspIdfEnv` with explicit
+  `srcHash`, `constraintsFile`, and `toolsJson` metadata when they belong to a
+  supported Python profile.
+- The current Python profiles document four effective constraint relaxations
+  (`cryptography>=2.1.4`, `click>=7.0`, `pyparsing>=3.1.0`, and
+  `esp-idf-nvs-partition-gen>=0.1.9`). Adding a new ESP-IDF release line means
+  adding and validating its profile's effective constraints before updating
+  the registry.
 - Constraints are vendored because <https://dl.espressif.com/dl/esp-idf/espidf.constraints.v*.txt> is updated in place upstream; a pinned URL hash rots.
