@@ -52,6 +52,8 @@ jobs:
         with:
           extra_nix_config: |
             accept-flake-config = true
+            sandbox = true
+            sandbox-fallback = false
 
       - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
         with:
@@ -62,6 +64,12 @@ jobs:
       - name: Check flake
         run: |
           test "$(nix eval --impure --raw --expr builtins.currentSystem)" = "$NIX_SYSTEM"
+          sandbox=$(nix config show sandbox)
+          sandbox_fallback=$(nix config show sandbox-fallback)
+          printf 'Effective Nix sandbox: %s\n' "$sandbox"
+          printf 'Effective Nix sandbox fallback: %s\n' "$sandbox_fallback"
+          test "$sandbox" = true
+          test "$sandbox_fallback" = false
           nix flake check --all-systems --no-build --no-write-lock-file
 
       - name: Build all packages

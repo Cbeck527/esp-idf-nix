@@ -297,6 +297,14 @@ supports manual runs; it evaluates the package and shell graph, then runs the
 runtime, archive, profile-state, EIM help, and per-target firmware checks.
 Only runs on the upstream `main` branch publish.
 
+Every CI runner uses `sandbox = true` with `sandbox-fallback = false`. Reproduce
+the acceptance check locally with the same settings:
+
+```sh
+nix --option sandbox true --option sandbox-fallback false flake check \
+  --no-write-lock-file --print-build-logs
+```
+
 To enable publishing, create a per-cache Cachix token with write access to
 `esp-idf-nix`, then add it as the repository Actions secret `CACHIX_AUTH_TOKEN` under **Settings →
 Secrets and variables → Actions**. Publishing jobs fail with a setup message if the
