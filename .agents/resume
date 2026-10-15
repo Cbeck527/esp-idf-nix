@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# There are no backing services or user credentials to refresh. Do not download
+# dependencies on wake; the login profile activates the shell prepared by setup.
+test -e "$HOME/.cache/amp/esp-idf-nix/default"
+echo 'Cached ESP-IDF development environment is ready'

@@ -311,6 +311,20 @@ Secrets and variables → Actions**. Publishing jobs fail with a setup message i
 secret is missing. Run **Build and cache** on `main` after adding the secret to
 populate the cache.
 
+## Amp Orbs
+
+`.agents/setup` prepares every development shell and the `eim` and
+`prefetch-version` tools from `flake.lock`, using the public binary cache when
+available. Nix profiles retain these dependencies for orb snapshots and warm
+setup runs. No cache credentials are required.
+
+New login shells in this repository (including non-interactive agent shells)
+automatically activate the default full ESP-IDF environment. Use
+`nix develop .#v5` or `nix develop .#v6` to explicitly select a release line.
+`.agents/resume` only checks that the cached environment exists; it does not
+install dependencies. Setup changes take effect for future project orbs after
+they reach the project's default branch.
+
 ## Troubleshooting
 
 ### `IDF_PATH` is not set

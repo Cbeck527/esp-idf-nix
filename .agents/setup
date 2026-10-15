@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_root"
+SECONDS=0
+
+echo 'Preparing Nix prerequisites'
+missing=()
+for package in ca-certificates curl xz-utils; do
+  if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
+    missing+=("$package")
+  fi
+done
+if ((${#missing[@]})); then
+  sudo apt-get update
+  sudo apt-get install -y "${missing[@]}"
+fi
+
+# Orbs currently include Nix. Keep a single-user fallback for base images without it.
+if ! command -v nix >/dev/null && [[ ! -x "$HOME/.nix-profile/bin/nix" ]]; then
+  installer="$(mktemp)"
+  trap 'rm -f "$installer"' EXIT
+  curl --fail --location --retry 3 https://releases.nixos.org/nix/nix-2.35.3/install -o "$installer"
+  bash "$installer" --no-daemon --yes --no-modify-profile
+  rm -f "$installer"
+  trap - EXIT
+fi
+if [[ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]]; then
+  # The installer cannot update the environment of this running process.
+  source "$HOME/.nix-profile/etc/profile.d/nix.sh"
+fi
+nix_bin="$(command -v nix)"
+# Amp commands can inherit SIGINT ignored; dependency tests expect normal signals.
+nix_cmd=(env --default-signal=INT "$nix_bin"
+  --extra-experimental-features 'nix-command flakes' --accept-flake-config)
+cache_dir="$HOME/.cache/amp/esp-idf-nix"
+mkdir -p "$cache_dir"
+
+# Profiles are GC roots: keep the downloaded closures in stale snapshots too.
+system="$("${nix_cmd[@]}" eval --impure --raw --expr builtins.currentSystem)"
+shells="$("${nix_cmd[@]}" eval --raw --no-write-lock-file \
+  ".#devShells.$system" --apply 'shells: builtins.concatStringsSep "\n" (builtins.attrNames shells)')"
+while IFS= read -r shell; do
+  echo "[$SECONDS s] Preparing $shell development shell"
+  "${nix_cmd[@]}" develop --no-write-lock-file \
+    --profile "$cache_dir/$shell" ".#$shell" --command true > /dev/null
+done <<< "$shells"
+
+echo "[$SECONDS s] Preparing repository maintenance tools"
+for tool in eim prefetch-version; do
+  "${nix_cmd[@]}" build --no-write-lock-file \
+    --out-link "$cache_dir/$tool" ".#$tool"
+done
+
+# Export the complete shell into Amp and service login shells, without nesting nix develop.
+# --offline prevents login from refreshing remote metadata; setup owns downloads.
+cat > "$cache_dir/activate.bash" <<EOF
+if [[ -z "\${IN_NIX_SHELL:-}" && ( "\$PWD" == "$repo_root" || "\$PWD" == "$repo_root/"* ) ]]; then
+  if _esp_idf_env="\$("$nix_bin" --extra-experimental-features 'nix-command flakes' --accept-flake-config print-dev-env --offline --no-write-lock-file "$repo_root#default")"; then
+    eval "\$_esp_idf_env" >/dev/null
+    export PATH="\$PATH:$(dirname "$nix_bin"):$cache_dir/eim/bin:$cache_dir/prefetch-version/bin"
+  fi
+  unset _esp_idf_env
+fi
+EOF
+# Keep the profile entry stable while allowing stale snapshots to refresh activation.
+marker='# esp-idf-nix orb development environment'
+if ! grep -Fqx "$marker" "$HOME/.bash_profile" 2>/dev/null; then
+  cat >> "$HOME/.bash_profile" <<EOF
+
+$marker
+source "$cache_dir/activate.bash"
+EOF
+fi
+
+echo "Orb setup finished in $SECONDS seconds"
