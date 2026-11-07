@@ -35,7 +35,7 @@ manifests themselves.
 
 | Snapshots | Upstream source |
 | --- | --- |
-| `v5.5.4.txt` | [ESP-IDF v5.5 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt) |
+| `v5.5.6.txt` | [ESP-IDF v5.5 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt) |
 | `v6.0.txt`, `v6.0.1.txt`, `v6.0.2.txt`, `v6.0.3.txt` | [ESP-IDF v6.0 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.0.txt) |
 
 These download URLs are updated in place; the checked-in files preserve the

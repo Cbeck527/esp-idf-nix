@@ -26,7 +26,7 @@ let
   releaseLineFor =
     version:
     if builtins.match "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" version == null then
-      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.4 or 6.0.2."
+      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.6 or 6.0.2."
     else
       lib.versions.majorMinor version;
 
@@ -41,9 +41,9 @@ let
       };
 
       esptool = {
-        version = "4.12.dev3";
-        url = "https://files.pythonhosted.org/packages/fb/e3/16550412544581e57d5e154faf6c7482d10b4085efceee7ad6badc359eae/esptool-4.12.dev3.tar.gz";
-        sha256 = "fade69a55f491f7c8c6a57d0213bd95e1cae468078b7c7fb491a913f8e80e9fa";
+        version = "4.12.0";
+        url = "https://files.pythonhosted.org/packages/84/19/f68b27fd43564d69277e956d13b8c2b352e7f1af4fb5d6e5c43e5419e61c/esptool-4.12.0.tar.gz";
+        sha256 = "d797f6529d582173508baf0572542ddadf53aae8c92c84ea9f420f242464103c";
         dependencies = with py; [
           bitstring
           cryptography

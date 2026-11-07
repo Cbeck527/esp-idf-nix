@@ -13,8 +13,23 @@ It provides:
 
 Current major aliases:
 
-- `v5` -> `5.5.4`
+- `v5` -> `5.5.6`
 - `v6` -> `6.0.3`
+
+> [!WARNING]
+> **Breaking change:** ESP-IDF 5.5.4 is no longer registered in this flake
+> because of published security vulnerabilities, including an
+> [OpenThread Border Router out-of-bounds write](https://github.com/espressif/esp-idf/security/advisories/GHSA-c26h-gm53-qg83),
+> a [WebSocket server NULL-pointer dereference](https://github.com/espressif/esp-idf/security/advisories/GHSA-3j8v-xgrq-5vg8),
+> and ESP-TEE secure-service flaws
+> ([CVE-2026-45328](https://nvd.nist.gov/vuln/detail/CVE-2026-45328),
+> [CVE-2026-45329](https://nvd.nist.gov/vuln/detail/CVE-2026-45329)).
+> 5.5.6 also fixes an ESP-TEE privilege-boundary flaw
+> ([CVE-2026-113780](https://www.cve.org/CVERecord?id=CVE-2026-113780)) that
+> affects every release before it, which is why this flake skips 5.5.5.
+> `mkEspIdfEnv { version = "5.5.4"; }` now fails with
+> `Unknown ESP-IDF version 5.5.4`. Move to `5.5.6` or use the `v5` alias.
+> Projects on the `v5` alias or template move to 5.5.6 automatically.
 
 ## Quick Start
 
@@ -145,7 +160,7 @@ env = esp-idf-nix.lib.mkEspIdfEnvForMajor {
 ```nix
 env = esp-idf-nix.lib.mkEspIdfEnv {
   system = "aarch64-darwin";
-  version = "5.5.4";
+  version = "5.5.6";
 };
 ```
 
@@ -159,7 +174,7 @@ env = esp-idf-nix.lib.mkEspIdfEnv {
     config.allowInsecurePredicate = pkg: (pkg.pname or "") == "ecdsa";
   };
   system = "aarch64-darwin";
-  version = "5.5.4";
+  version = "5.5.6";
 };
 ```
 
@@ -217,9 +232,9 @@ Unversioned packages remain available only for artifacts that are not tied to an
 
 ```sh
 nix run github:Cbeck527/esp-idf-nix#eim -- --help
-nix run github:Cbeck527/esp-idf-nix#eim -- install --idf-versions 5.5.4 --path "$HOME/esp"
+nix run github:Cbeck527/esp-idf-nix#eim -- install --idf-versions 5.5.6 --path "$HOME/esp"
 nix run github:Cbeck527/esp-idf-nix#eim -- list
-nix run github:Cbeck527/esp-idf-nix#eim -- select 5.5.4
+nix run github:Cbeck527/esp-idf-nix#eim -- select 5.5.6
 ```
 
 ## Python and tool state

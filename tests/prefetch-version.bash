@@ -6,9 +6,9 @@ set -euo pipefail
 workspace_root="$(pwd -P)"
 workspace_tools_checksum=""
 workspace_constraints_checksum=""
-if [ -f "$workspace_root/data/tools/v5.5.4.json" ]; then
-  workspace_tools_checksum="$(cksum "$workspace_root/data/tools/v5.5.4.json")"
-  workspace_constraints_checksum="$(cksum "$workspace_root/data/constraints/v5.5.4.txt")"
+if [ -f "$workspace_root/data/tools/v5.5.6.json" ]; then
+  workspace_tools_checksum="$(cksum "$workspace_root/data/tools/v5.5.6.json")"
+  workspace_constraints_checksum="$(cksum "$workspace_root/data/constraints/v5.5.6.txt")"
 fi
 test_root="$(mktemp -d)"
 trap 'rm -rf "$test_root"' EXIT
@@ -141,17 +141,17 @@ assert_same() {
 # Stable releases keep the complete version in the GitHub tag and output names.
 stable="$test_root/stable"
 new_repo "$stable"
-if ! run_helper 5.5.4 "$stable" > "$stable/output"; then
+if ! run_helper 5.5.6 "$stable" > "$stable/output"; then
   cat "$stable/output" >&2
   cat "$stable/error.log" >&2
   exit 1
 fi
-assert_file "$stable/data/tools/v5.5.4.json"
-assert_file "$stable/data/constraints/v5.5.4.txt"
-grep -Fx 'https://raw.githubusercontent.com/espressif/esp-idf/v5.5.4/tools/tools.json' "$stable/curl.log"
+assert_file "$stable/data/tools/v5.5.6.json"
+assert_file "$stable/data/constraints/v5.5.6.txt"
+grep -Fx 'https://raw.githubusercontent.com/espressif/esp-idf/v5.5.6/tools/tools.json' "$stable/curl.log"
 grep -Fx 'https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt' "$stable/curl.log"
-grep -Fq '"5.5.4"' "$stable/output"
-grep -Fq 'v5.5.4' "$stable/nix.log"
+grep -Fq '"5.5.6"' "$stable/output"
+grep -Fq 'v5.5.6' "$stable/nix.log"
 
 # Prereleases use their full tag while constraints remain keyed by numeric major/minor.
 prerelease="$test_root/prerelease"
@@ -213,8 +213,8 @@ failure_case unexpected-source-success ok success
 
 test "$(pwd -P)" = "$workspace_root"
 if [ -n "$workspace_tools_checksum" ]; then
-  test "$(cksum "$workspace_root/data/tools/v5.5.4.json")" = "$workspace_tools_checksum"
-  test "$(cksum "$workspace_root/data/constraints/v5.5.4.txt")" = "$workspace_constraints_checksum"
+  test "$(cksum "$workspace_root/data/tools/v5.5.6.json")" = "$workspace_tools_checksum"
+  test "$(cksum "$workspace_root/data/constraints/v5.5.6.txt")" = "$workspace_constraints_checksum"
 fi
 
 echo "prefetch-version tests passed"
