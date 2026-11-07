@@ -14,7 +14,7 @@ It provides:
 Current major aliases:
 
 - `v5` -> `5.5.4`
-- `v6` -> `6.0.2`
+- `v6` -> `6.0.3`
 
 ## Quick Start
 
@@ -179,7 +179,7 @@ nix eval --impure --json --expr '
   builtins.attrNames (
     (flake.lib.mkEspIdfEnv {
       system = builtins.currentSystem;
-      version = "6.0.2";
+      version = "6.0.3";
     }).packages
   )
 '

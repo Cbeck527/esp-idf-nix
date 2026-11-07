@@ -1,7 +1,7 @@
 {
   latestByMajor = {
     "5" = "5.5.4";
-    "6" = "6.0.2";
+    "6" = "6.0.3";
   };
 
   knownVersions = {
@@ -24,6 +24,11 @@
       srcHash = "sha256-dVdJ+aUjMJyWoz+wOwA0R6XH3JRq0VBpC1sAH/aLECs=";
       constraintsPath = ./constraints/v6.0.2.txt;
       toolsJsonPath = ./tools/v6.0.2.json;
+    };
+    "6.0.3" = {
+      srcHash = "sha256-EPfmoivXCiEs3acc8ClJujCDtlePoG7kIj/mXmZtN24=";
+      constraintsPath = ./constraints/v6.0.3.txt;
+      toolsJsonPath = ./tools/v6.0.3.json;
     };
   };
 }
