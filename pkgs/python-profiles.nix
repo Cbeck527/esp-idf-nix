@@ -26,7 +26,7 @@ let
   releaseLineFor =
     version:
     if builtins.match "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" version == null then
-      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.6 or 6.0.2."
+      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.6 or 6.0.3."
     else
       lib.versions.majorMinor version;
 

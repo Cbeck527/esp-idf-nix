@@ -19,11 +19,11 @@ The upstream snapshots below are excluded from that license grant.
 
 `tools/v<version>.json` files are snapshots of `tools/tools.json` from the matching
 [ESP-IDF release tag](https://github.com/espressif/esp-idf/tags). For example,
-`tools/v6.0.2.json` comes from
-[ESP-IDF v6.0.2](https://github.com/espressif/esp-idf/blob/v6.0.2/tools/tools.json).
+`tools/v6.0.3.json` comes from
+[ESP-IDF v6.0.3](https://github.com/espressif/esp-idf/blob/v6.0.3/tools/tools.json).
 
 These files retain ESP-IDF's Apache-2.0 license, reproduced in [tools/LICENSE](tools/LICENSE).
-The [upstream copyright notice](https://github.com/espressif/esp-idf/blob/v6.0.2/docs/en/COPYRIGHT.rst)
+The [upstream copyright notice](https://github.com/espressif/esp-idf/blob/v6.0.3/docs/en/COPYRIGHT.rst)
 states: Copyright (C) 2015-2023 Espressif Systems.
 
 The `license` fields inside the manifests describe the listed tools, not the
@@ -36,7 +36,7 @@ manifests themselves.
 | Snapshots | Upstream source |
 | --- | --- |
 | `v5.5.6.txt` | [ESP-IDF v5.5 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt) |
-| `v6.0.txt`, `v6.0.1.txt`, `v6.0.2.txt`, `v6.0.3.txt` | [ESP-IDF v6.0 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.0.txt) |
+| `v6.0.3.txt` | [ESP-IDF v6.0 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.0.txt) |
 
 These download URLs are updated in place; the checked-in files preserve the
 versions used by this flake. The downloaded files contain no explicit license

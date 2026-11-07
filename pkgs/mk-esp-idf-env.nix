@@ -44,7 +44,7 @@ let
       versionMatch = builtins.match "^([0-9]+\\.[0-9]+(\\.[0-9]+)?)([-+][0-9A-Za-z.-]+)?$" version;
     in
     if versionMatch == null then
-      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.6 or 6.0.2, with an optional prerelease suffix."
+      throw "Invalid ESP-IDF version '${version}'. Use a numeric release such as 5.5.6 or 6.0.3, with an optional prerelease suffix."
     else
       builtins.elemAt versionMatch 0;
 

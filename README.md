@@ -31,6 +31,18 @@ Current major aliases:
 > `Unknown ESP-IDF version 5.5.4`. Move to `5.5.6` or use the `v5` alias.
 > Projects on the `v5` alias or template move to 5.5.6 automatically.
 
+> [!WARNING]
+> **Breaking change:** ESP-IDF 6.0, 6.0.1, and 6.0.2 are no longer registered
+> in this flake because of an
+> [OpenThread Border Router out-of-bounds write](https://github.com/espressif/esp-idf/security/advisories/GHSA-c26h-gm53-qg83)
+> that affects 6.0 through 6.0.2 and is fixed in 6.0.3.
+> `mkEspIdfEnv { version = "6.0.2"; }` now fails with
+> `Unknown ESP-IDF version 6.0.2`. Move to `6.0.3` or use the `v6` alias.
+> Projects on the `v6` alias or template move to 6.0.3 automatically.
+> 6.0.3 is still affected by an
+> [ESP-TEE privilege-boundary flaw](https://github.com/espressif/esp-idf/security/advisories/GHSA-49x8-xqjg-2pjg)
+> on ESP32-C5, C6, C61, and H2; its fix ships in the unreleased 6.0.4.
+
 ## Quick Start
 
 ### Scaffold a new project
