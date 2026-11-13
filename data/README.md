@@ -37,6 +37,7 @@ manifests themselves.
 | --- | --- |
 | `v5.5.6.txt` | [ESP-IDF v5.5 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v5.5.txt) |
 | `v6.0.3.txt` | [ESP-IDF v6.0 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.0.txt) |
+| `v6.1.txt` | [ESP-IDF v6.1 constraints](https://dl.espressif.com/dl/esp-idf/espidf.constraints.v6.1.txt) |
 
 These download URLs are updated in place; the checked-in files preserve the
 versions used by this flake. The downloaded files contain no explicit license

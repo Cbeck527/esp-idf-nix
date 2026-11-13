@@ -14,6 +14,7 @@ let
       espIdfVersion
       constraintsFile
       ;
+    localPackages = { inherit esp-pylib; };
   };
   profile = pythonProfile.profile;
 
@@ -85,10 +86,7 @@ let
 
     build-system = [ py.setuptools ];
 
-    dependencies = [
-      py.rich
-      py.pyparsing
-    ];
+    dependencies = profile.esp-idf-kconfig.dependencies;
 
     doCheck = false;
 
@@ -196,12 +194,12 @@ let
 
   esp-pylib = py.buildPythonPackage {
     pname = "esp-pylib";
-    version = "1.1.1";
+    version = "1.2.1";
     pyproject = true;
 
     src = pkgs.fetchurl {
-      url = "https://files.pythonhosted.org/packages/86/9b/28b2f779bbd3d0379c563200dc81b15e2134bd6980d8a4fa1e26a8ef24d3/esp_pylib-1.1.1.tar.gz";
-      sha256 = "4538b493d621727c8925cec7b065d6136e9afac9952ea56d61377b8628aacb4b";
+      url = "https://files.pythonhosted.org/packages/b7/f1/f01bc72408264940589976e1973ca0c978fdc77ef377cca01a0cc42c9418/esp_pylib-1.2.1.tar.gz";
+      sha256 = "c0854cc57b86e2745e9f7ac820d5d5e8a9f2c2d93caf12623c419b8d08d852f6";
     };
 
     build-system = [
@@ -209,17 +207,66 @@ let
       py.wheel
     ];
 
+    # Include the cli, ide, and serial extras: esptool and esp-idf-monitor
+    # request them, and ESP-IDF's dependency check follows requested extras.
     dependencies = with py; [
       rich
       rich-click
       click
       pyserial
+      websockets
     ];
 
     doCheck = false;
     pythonImportsCheck = [ "esp_pylib" ];
 
     meta.description = "Shared Python utilities for Espressif tools";
+  };
+
+  esp-idf-sbom = py.buildPythonPackage {
+    pname = "esp-idf-sbom";
+    version = "1.5.0";
+    pyproject = true;
+
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/16/30/574d62a53ad7c8b3eb8d31152e5923675b7328a8918732397cf87a4b8d74/esp_idf_sbom-1.5.0.tar.gz";
+      sha256 = "a21ef024856563a2d186a4869d1284443bf5d085fd1b46164f12745acf887409";
+    };
+
+    build-system = [ py.setuptools ];
+
+    dependencies = with py; [
+      esp-pylib
+      license-expression
+      pyparsing
+      pyyaml
+      rich
+      schema
+    ];
+
+    doCheck = false;
+    pythonImportsCheck = [ "esp_idf_sbom" ];
+
+    meta.description = "ESP-IDF SBOM generation tool";
+  };
+
+  idf-drivers-gdb = py.buildPythonPackage {
+    pname = "idf-drivers-gdb";
+    version = "0.1.1";
+    pyproject = true;
+
+    src = pkgs.fetchurl {
+      url = "https://files.pythonhosted.org/packages/91/8f/a3010dad3fe0836a4187081a1481fbcc1619614cb949a00afe738f7c629c/idf_drivers_gdb-0.1.1.tar.gz";
+      sha256 = "dc972dfb9b106b0b883b41bbf8c3ed9cbee8a97367c75eeeab772c573c8455c0";
+    };
+
+    build-system = [ py.setuptools ];
+
+    dependencies = [ ];
+
+    doCheck = false;
+
+    meta.description = "GDB commands for debugging ESP-IDF drivers";
   };
 
   esp-idf-monitor = py.buildPythonPackage {
@@ -282,10 +329,7 @@ let
 
     build-system = [ py.setuptools ];
 
-    dependencies = with py; [
-      pyyaml
-      rich
-    ];
+    dependencies = profile.esp-idf-size.dependencies;
 
     doCheck = false;
 
@@ -312,6 +356,8 @@ in
     tree-sitter-c
     esptool
     esp-coredump
+    esp-idf-sbom
+    idf-drivers-gdb
     esp-idf-monitor
     idf-component-manager
     esp-idf-size
@@ -327,6 +373,8 @@ in
     tree-sitter-c
     esptool
     esp-coredump
+    esp-idf-sbom
+    idf-drivers-gdb
     esp-idf-monitor
     idf-component-manager
     esp-idf-size

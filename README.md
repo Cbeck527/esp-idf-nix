@@ -14,7 +14,15 @@ It provides:
 Current major aliases:
 
 - `v5` -> `5.5.6`
-- `v6` -> `6.0.3`
+- `v6` -> `6.1`
+
+> [!NOTE]
+> The `v6` alias and template now track the ESP-IDF 6.1 release line instead
+> of 6.0. This is a minor ESP-IDF release, so review the
+> [v6.1 release notes](https://github.com/espressif/esp-idf/releases/tag/v6.1)
+> before moving. To stay on 6.0, pin it with
+> `mkEspIdfEnv { version = "6.0.3"; }`. CI builds and caches only the alias
+> targets, so 6.0.3 may build locally.
 
 > [!WARNING]
 > **Breaking change:** ESP-IDF 5.5.4 is no longer registered in this flake
@@ -37,11 +45,11 @@ Current major aliases:
 > [OpenThread Border Router out-of-bounds write](https://github.com/espressif/esp-idf/security/advisories/GHSA-c26h-gm53-qg83)
 > that affects 6.0 through 6.0.2 and is fixed in 6.0.3.
 > `mkEspIdfEnv { version = "6.0.2"; }` now fails with
-> `Unknown ESP-IDF version 6.0.2`. Move to `6.0.3` or use the `v6` alias.
-> Projects on the `v6` alias or template move to 6.0.3 automatically.
-> 6.0.3 is still affected by an
+> `Unknown ESP-IDF version 6.0.2`. Move to `6.0.3`, or to `6.1` through the
+> `v6` alias.
+> 6.0.3 and 6.1 are still affected by an
 > [ESP-TEE privilege-boundary flaw](https://github.com/espressif/esp-idf/security/advisories/GHSA-49x8-xqjg-2pjg)
-> on ESP32-C5, C6, C61, and H2; its fix ships in the unreleased 6.0.4.
+> on ESP32-C5, C6, C61, and H2; its fix ships in the unreleased 6.0.4 and 6.1.1.
 
 ## Quick Start
 
@@ -193,7 +201,7 @@ env = esp-idf-nix.lib.mkEspIdfEnv {
 For a release that is not registered in `lib.knownVersions`, pass the exact
 source hash, constraints snapshot, and tools manifest you keep beside your
 flake directly to `mkEspIdfEnv`. The version still has to belong to a
-supported Python profile (currently ESP-IDF 5.5 or 6.0); adding another
+supported Python profile (currently ESP-IDF 5.5, 6.0, or 6.1); adding another
 release line requires a maintainer to add and validate its profile.
 
 To inspect the exact packages for a registered version:
@@ -206,7 +214,7 @@ nix eval --impure --json --expr '
   builtins.attrNames (
     (flake.lib.mkEspIdfEnv {
       system = builtins.currentSystem;
-      version = "6.0.3";
+      version = "6.1";
     }).packages
   )
 '

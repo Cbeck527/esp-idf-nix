@@ -3,10 +3,12 @@
   lib,
   espIdfVersion ? null,
   constraintsFile ? null,
+  # Packages built by python-packages.nix that profile dependencies can name.
+  localPackages ? { },
 }:
 
 let
-  py = pkgs.python3Packages;
+  py = pkgs.python3Packages // localPackages;
 
   # These hooks are kept with the profile data so package definitions consume
   # one source of truth for metadata relaxations as well as pins.
@@ -31,13 +33,17 @@ let
       lib.versions.majorMinor version;
 
   profiles = {
-    # ESP-IDF pins Python tooling per release line, so 5.5.x and 6.0.x need
-    # different package versions.
+    # ESP-IDF pins Python tooling per release line, so 5.5.x, 6.0.x, and
+    # 6.1.x need different package versions.
     "5.5" = {
       esp-idf-kconfig = {
         version = "2.5.3";
         url = "https://files.pythonhosted.org/packages/7b/fa/e2676f920db7f0be035d4feb2e074328656a438f4c1c93e660738b04bfd0/esp_idf_kconfig-2.5.3.tar.gz";
         sha256 = "1c5f543bd94bf99144b4f20e583877da72c3d6f39b89b28ae3d96c30bbe7c50c";
+        dependencies = with py; [
+          rich
+          pyparsing
+        ];
       };
 
       esptool = {
@@ -90,6 +96,10 @@ let
         version = "1.7.1";
         url = "https://files.pythonhosted.org/packages/f7/a0/c8b13d7b27daec1e88a8d6c5f8f3cf6f4eae795c70f19fb70c4bc37ce943/esp_idf_size-1.7.1.tar.gz";
         sha256 = "95a6d460a26e9330035aaf1e1c25ccf37160549756214320ccca8404d97dcc1b";
+        dependencies = with py; [
+          pyyaml
+          rich
+        ];
       };
     };
 
@@ -98,6 +108,10 @@ let
         version = "3.7.0";
         url = "https://files.pythonhosted.org/packages/09/e4/c1149c2ea12304d92f8852893d7e116e7541b6cf56bd416f0ef65ad310ac/esp_idf_kconfig-3.7.0.tar.gz";
         sha256 = "57cc5d8b03741c1d6d9fb3eadac5c925527797b61207cda47b6e407e1376ff95";
+        dependencies = with py; [
+          rich
+          pyparsing
+        ];
       };
 
       esptool = {
@@ -147,6 +161,79 @@ let
         version = "2.1.0";
         url = "https://files.pythonhosted.org/packages/4e/68/2052f458ac58d86a80b4cfe71bbce9c99982f906e36d6f49be2bddb85fdb/esp_idf_size-2.1.0.tar.gz";
         sha256 = "c010472bd89e405aa340815fa7c24ebb4852718f9d576b5b749bea84f21c2051";
+        dependencies = with py; [
+          pyyaml
+          rich
+        ];
+      };
+    };
+
+    # Versions match the upper bounds that Espressif tested for release/v6.1
+    # (see the UPPER BOUNDS block in its constraints). esptool is excluded
+    # from those bounds, so it is the newest release that satisfies <6.
+    "6.1" = {
+      esp-idf-kconfig = {
+        version = "3.14.0";
+        url = "https://files.pythonhosted.org/packages/f9/d8/14d43b9f2fe389d8ed9d7279e776779d30a1d00dc5c70b546b343a65f734/esp_idf_kconfig-3.14.0.tar.gz";
+        sha256 = "3dddcfd2ce4be602b1231d95a8d2f7985dd0b9a62002dcc6809164c94a6ebbc5";
+        dependencies = with py; [
+          esp-pylib
+          pyparsing
+          textual
+        ];
+      };
+
+      esptool = {
+        version = "5.6.0";
+        url = "https://files.pythonhosted.org/packages/96/4c/a949409e527b87f863f237cea9f997d25644607f799293a3d247f1b40e67/esptool-5.6.0.tar.gz";
+        sha256 = "86c7249e9cc3a824e032ede9ba20abad057a2c49e231418cc4f02b177bb36f42";
+        dependencies = with py; [
+          click
+          cryptography
+          esp-pylib
+          intelhex
+          pyserial
+          pyyaml
+          reedsolo
+          rich-click
+        ];
+      };
+
+      idf-component-manager = {
+        version = "3.1.2";
+        url = "https://files.pythonhosted.org/packages/fb/26/a911d11e7e08f0cdf0175b33b99667dc125496f79ee9ad851a6ffd390222/idf_component_manager-3.1.2.tar.gz";
+        sha256 = "75ad9e4452d1bf42bea0a77d72af679714e2bb147627d926cee114122b6e33a0";
+        dependencies = with py; [
+          esp-pylib
+          jsonref
+          pathvalidate
+          psutil
+          pydantic
+          pydantic-core
+          pydantic-settings
+          pyparsing
+          requests
+          requests-file
+          requests-toolbelt
+          rich
+          rich-click
+          ruamel-yaml
+          truststore
+        ];
+        # 3.1 publishes its dependencies without version bounds.
+        pythonRelaxDeps = [ ];
+      };
+
+      esp-idf-size = {
+        version = "2.3.2";
+        url = "https://files.pythonhosted.org/packages/42/c1/bd96f62b1f0332bcaea6125ee3e56b9f86fd50f3b0e1c44ce37b47090d73/esp_idf_size-2.3.2.tar.gz";
+        sha256 = "d99479bd903f436b3f68b9edd5680108abe8ec85d0f015e657e20f82e48b5a66";
+        dependencies = with py; [
+          esp-pylib
+          pyyaml
+          rich
+          rich-click
+        ];
       };
     };
   };
