@@ -14,7 +14,7 @@ It provides:
 Current major aliases:
 
 - `v5` -> `5.5.6`
-- `v6` -> `6.1`
+- `v6` -> `6.1.1`
 
 > [!NOTE]
 > The `v6` alias and template now track the ESP-IDF 6.1 release line instead
@@ -45,11 +45,27 @@ Current major aliases:
 > [OpenThread Border Router out-of-bounds write](https://github.com/espressif/esp-idf/security/advisories/GHSA-c26h-gm53-qg83)
 > that affects 6.0 through 6.0.2 and is fixed in 6.0.3.
 > `mkEspIdfEnv { version = "6.0.2"; }` now fails with
-> `Unknown ESP-IDF version 6.0.2`. Move to `6.0.3`, or to `6.1` through the
+> `Unknown ESP-IDF version 6.0.2`. Move to `6.0.3`, or to `6.1.1` through the
 > `v6` alias.
-> 6.0.3 and 6.1 are still affected by an
+> 6.0.3 is still affected by an
 > [ESP-TEE privilege-boundary flaw](https://github.com/espressif/esp-idf/security/advisories/GHSA-49x8-xqjg-2pjg)
-> on ESP32-C5, C6, C61, and H2; its fix ships in the unreleased 6.0.4 and 6.1.1.
+> on ESP32-C5, C6, C61, and H2; its fix ships in the unreleased 6.0.4.
+
+> [!WARNING]
+> **Breaking change:** ESP-IDF 6.1 is no longer registered in this flake
+> because of an
+> [ESP-TEE privilege-boundary flaw](https://github.com/espressif/esp-idf/security/advisories/GHSA-49x8-xqjg-2pjg)
+> ([CVE-2026-113780](https://www.cve.org/CVERecord?id=CVE-2026-113780))
+> on ESP32-C5, C6, C61, and H2 that is fixed in 6.1.1.
+> `mkEspIdfEnv { version = "6.1"; }` now fails with
+> `Unknown ESP-IDF version 6.1`. Move to `6.1.1` or use the `v6` alias.
+> Projects on the `v6` alias or template move to 6.1.1 automatically.
+> Although 6.1.1 is a bugfix release, it has breaking changes, including an
+> HTTP server request body cap, BLE Audio and BLE ISO API changes, Key Manager
+> removal on ESP32-C5, P4, and S31, and a new `MAC_EXT` byte order on C5 and
+> H21. Review the
+> [v6.1.1 release notes](https://github.com/espressif/esp-idf/releases/tag/v6.1.1)
+> before updating.
 
 ## Quick Start
 
@@ -214,7 +230,7 @@ nix eval --impure --json --expr '
   builtins.attrNames (
     (flake.lib.mkEspIdfEnv {
       system = builtins.currentSystem;
-      version = "6.1";
+      version = "6.1.1";
     }).packages
   )
 '
